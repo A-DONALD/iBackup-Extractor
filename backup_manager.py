@@ -40,7 +40,15 @@ class BackupManager:
 
         return files
 
-    def get_file_path(self, backup_id, file_id: int):
+    def get_file_path(self, backup_id, file):
+        file_id = None
+        if isinstance(file, str):
+            for i in range(len(self.backups_files[backup_id])):
+                if f"{self.backups_files[backup_id][i][1]}/{self.backups_files[backup_id][i][2]}" == file:
+                    file_id = i
+                    break
+        elif isinstance(file, int):
+            file_id = file
         return os.path.join(self.__backup_dir, self.__all_backups[backup_id],
                             self.backups_files[backup_id][file_id][0][:2], self.backups_files[backup_id][file_id][0])
 
