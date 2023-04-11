@@ -7,10 +7,12 @@ class BackupManager:
         self.__backup_dir = backup_dir
         self.__all_backups = []
         self.search_backups()
+        # under array that we use for each backup file to save the information
         self.backups_files = [[] * len(self.__all_backups)]
 
     def search_backups(self):
         if os.path.exists(self.__backup_dir):
+            # search folder by folder in the localisation of backup and verify that we have a file manifest.plist
             self.__all_backups = [folder for folder in os.listdir(self.__backup_dir) if os.path.exists(
                 os.path.join(self.__backup_dir, folder, 'Manifest.plist'))]
 
@@ -36,7 +38,7 @@ class BackupManager:
         self.backups_files[backup_id] = cursor.fetchall()
 
         # Iterate over the results and get out information about each file
-        files = [f"{row[2]}" for row in self.backups_files[backup_id]]
+        files = [f"{row[1]}/{row[2]}" for row in self.backups_files[backup_id]]
 
         return files
 
