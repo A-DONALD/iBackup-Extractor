@@ -53,9 +53,3 @@ class BackupManager:
             file_id = file
         return os.path.join(self.__backup_dir, self.__all_backups[backup_id],
                             self.backups_files[backup_id][file_id][0][:2], self.backups_files[backup_id][file_id][0])
-
-test = BackupManager('C:\\Users\\donal\\Downloads\\backup samples')
-test.search_backups()
-print(test.list_backups())
-print(test.list_backup_files(0))
-print(test.get_file_path(0, 0))
