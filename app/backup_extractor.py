@@ -24,7 +24,7 @@ class BackupExtractor:
         with open(status, 'rb') as fp:
             self.backup_metadata['Status'] = plistlib.load(fp)
 
-    def extract_photos(self,files):
+    '''def extract_photos(self,files):
         if isinstance(files,list):
             for file in files:
                 self.extract_photos(file)
@@ -33,16 +33,35 @@ class BackupExtractor:
                 source_file = files[1]
                 os.makedirs(os.path.join(os.path.curdir, "Photos"), exist_ok=True)  # create Photos directory if it doesn't exist
                 dest_file = os.path.join(os.path.curdir, "Photos", files[0].split('/')[-1])
-                shutil.copy2(source_file, dest_file)
+                shutil.copy2(source_file, dest_file)'''
 
+    def extract_photos(self):
+        # Temp
+        source_file = os.path.join(self.backup_path, "12", "12b144c0bd44f2b3dffd9186d3f9c05b917cee25")
+        os.makedirs(os.path.join(os.path.curdir, "../tmp"), exist_ok=True)
+        dest_file = os.path.join(os.path.curdir, "../tmp", "Photos.sqlite")
+        shutil.copy2(source_file, dest_file)
+
+        # Connect to the Manifest.db file
+        conn = sqlite3.connect(dest_file)
+
+        # Get a cursor object
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM ZCLOUDMASTER JOIN ZCLOUDRESOURCE "
+                       "ON ZCLOUDMASTER.Z_PK = ZCLOUDRESOURCE.ZCLOUDMASTER ")
+
+        self.extracted_data['photos'] = cursor.fetchall()
+        print(self.extracted_data['photos'])
+
+    # TBD
     def extract_videos(self):
         pass
 
     def extract_contacts(self):
         #Temp
         source_file = os.path.join(self.backup_path, "31", "31bb7ba8914766d4ba40d6dfb6113c8b614be442")
-        os.makedirs(os.path.join(os.path.curdir, "tmp"), exist_ok=True)
-        dest_file = os.path.join(os.path.curdir, "tmp", "AddressBook.sqlitedb")
+        os.makedirs(os.path.join(os.path.curdir, "../tmp"), exist_ok=True)
+        dest_file = os.path.join(os.path.curdir, "../tmp", "AddressBook.sqlitedb")
         shutil.copy2(source_file, dest_file)
 
         # Connect to the Manifest.db file
@@ -75,32 +94,11 @@ class BackupExtractor:
 
         self.extracted_data['contacts'] = cursor.fetchall()
 
-    def extract_calender(self):
-        # Temp
-        source_file = os.path.join(self.backup_path, "20", "2041457d5fe04d39d0ab481178355df6781e6858")
-        os.makedirs(os.path.join(os.path.curdir, "tmp"), exist_ok=True)
-        dest_file = os.path.join(os.path.curdir, "tmp", "Calendar.sqlitedb")
-        shutil.copy2(source_file, dest_file)
-
-        # Connect to the Manifest.db file
-        conn = sqlite3.connect(dest_file)
-
-        # Get a cursor object
-        cursor = conn.cursor()
-        cursor.execute("SELECT ci.summary,DATETIME(ci.start_date + "
-                       "STRFTIME('%s', '2001-01-01 00:00:00'), 'unixepoch', 'localtime'),"
-                       "DATETIME(ci.end_date + "
-                       "STRFTIME('%s', '2001-01-01 00:00:00'), 'unixepoch', 'localtime'),"
-                       "ci.description, l.title FROM CalendarItem "
-                       "ci LEFT JOIN Location l ON ci.location_id = l.ROWID")
-
-        self.extracted_data['calendar'] = cursor.fetchall()
-
     def extract_sms(self):
         # Temp
         source_file = os.path.join(self.backup_path, "3d", "3d0d7e5fb2ce288813306e4d4636395e047a3d28")
-        os.makedirs(os.path.join(os.path.curdir, "tmp"), exist_ok=True)
-        dest_file = os.path.join(os.path.curdir, "tmp", "sms.db")
+        os.makedirs(os.path.join(os.path.curdir, "../tmp"), exist_ok=True)
+        dest_file = os.path.join(os.path.curdir, "../tmp", "sms.db")
         shutil.copy2(source_file, dest_file)
 
         # Connect to the Manifest.db file
@@ -120,9 +118,63 @@ class BackupExtractor:
 
         self.extracted_data['sms'] = cursor.fetchall()
 
+    def extract_calender(self):
+        # Temp
+        source_file = os.path.join(self.backup_path, "20", "2041457d5fe04d39d0ab481178355df6781e6858")
+        os.makedirs(os.path.join(os.path.curdir, "../tmp"), exist_ok=True)
+        dest_file = os.path.join(os.path.curdir, "../tmp", "Calendar.sqlitedb")
+        shutil.copy2(source_file, dest_file)
+
+        # Connect to the Manifest.db file
+        conn = sqlite3.connect(dest_file)
+
+        # Get a cursor object
+        cursor = conn.cursor()
+        cursor.execute("SELECT ci.summary,DATETIME(ci.start_date + "
+                       "STRFTIME('%s', '2001-01-01 00:00:00'), 'unixepoch', 'localtime'),"
+                       "DATETIME(ci.end_date + "
+                       "STRFTIME('%s', '2001-01-01 00:00:00'), 'unixepoch', 'localtime'),"
+                       "ci.description, l.title FROM CalendarItem "
+                       "ci LEFT JOIN Location l ON ci.location_id = l.ROWID")
+
+        self.extracted_data['calendar'] = cursor.fetchall()
+
     def extract_web_history(self):
         pass
 
+    #TBD
+    def extract_notes(self):
+        # Temp
+        source_file = os.path.join(self.backup_path, "4f", "4f98687d8ab0d6d1a371110e6b7300f6e465bef2")
+        os.makedirs(os.path.join(os.path.curdir, "../tmp"), exist_ok=True)
+        dest_file = os.path.join(os.path.curdir, "../tmp", "NoteStore.sqlite")
+        shutil.copy2(source_file, dest_file)
+
+        # Connect to the Manifest.db file
+        conn = sqlite3.connect(dest_file)
+
+        # Get a cursor object
+        cursor = conn.cursor()
+        cursor.execute("")
+
+        self.extracted_data['notes'] = cursor.fetchall()
+
+    #TBD
+    def extract_call_history(self):
+        # Temp
+        source_file = os.path.join(self.backup_path, "50", "5a4935c78a5255723f707230a451d79c540d2741")
+        os.makedirs(os.path.join(os.path.curdir, "../tmp"), exist_ok=True)
+        dest_file = os.path.join(os.path.curdir, "../tmp", "CallHistory.storedata")
+        shutil.copy2(source_file, dest_file)
+
+        # Connect to the Manifest.db file
+        conn = sqlite3.connect(dest_file)
+
+        # Get a cursor object
+        cursor = conn.cursor()
+        cursor.execute("")
+
+        self.extracted_data['call_history'] = cursor.fetchall()
     def extract_data(self):
         """extracts data from the backup file and returns it as a dictionary"""
 
@@ -132,4 +184,5 @@ class BackupExtractor:
         return self.extracted_data
 
 
-
+test = BackupExtractor(r"C:\Users\MSI\Downloads\backup samples\6e81410f-6424-4ec2-829e-1471769a741e")
+test.extract_photos()
