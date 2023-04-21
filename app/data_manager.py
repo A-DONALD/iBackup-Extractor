@@ -5,6 +5,7 @@ from datetime import datetime
 from pytz import UTC # timezone
 import csv
 import os
+import shutil
 class DataManager:
     """This class is responsible for managing the extracted data, storing it, and retrieving it as necessary."""
     def export_contacts(self, extracted_data, data_dir):
@@ -43,11 +44,11 @@ class DataManager:
             pdf_filename = os.path.join(data_dir, "messages", f"{phone_number}.pdf")
             c = canvas.Canvas(pdf_filename, pagesize=letter)
 
-            # ajouter un en-tête avec le numéro de téléphone
+            # add header with phone number
             c.setFont('Helvetica-Bold', 14)
             c.drawString(50, 750, f"Messages with {phone_number}")
 
-            # ajouter chaque message dans le corps du PDF
+            # add each message in the pdf
             c.setFont('Helvetica', 12)
             y = 700
             for title, datetime, is_for_me, message in messages:
@@ -64,6 +65,7 @@ class DataManager:
         cal.add('version', '2.0')
         for data in extracted_data:
             summary, dtstart, dtend, description, title = data
+            # create new event for each element of extracted_data
             event = Event()
             event.add('summary', f'{summary}')
             event.add('dtstart', datetime(int(dtstart.split("-")[0]),
@@ -86,6 +88,18 @@ class DataManager:
         f = open(os.path.join(data_dir, "calendar.ics"), 'wb')
         f.write(cal.to_ical())
         f.close()
+    def export_photos(self, photos, data_dir):
+        if isinstance(photos, list):
+            for file in photos:
+                self.export_photos(file, data_dir)
+
+        else:
+            if os.path.exists(photos[1]):
+                source_file = photos[1]
+                os.makedirs(os.path.join(data_dir, "Photos"),
+                            exist_ok=True)  # create Photos directory if it doesn't exist
+                dest_file = os.path.join(data_dir, "Photos", photos['filename'])
+                shutil.copy2(source_file, dest_file)
 
 test = DataManager()
 sms_data = [('', '2017-02-22 14:28:40', 1, '+40741757524', "Don't forget to buy food for Tommy. Love you!"),
