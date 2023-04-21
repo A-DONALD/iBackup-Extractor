@@ -56,5 +56,6 @@ class BackupManager:
             file_id = file
         else:
             return None
-        return os.path.join(self.__backup_dir, self.__all_backups[backup_id],
+        if file_id: return os.path.join(self.__backup_dir, self.__all_backups[backup_id],
                             self.backups_files[backup_id][file_id][0][:2], self.backups_files[backup_id][file_id][0])
+        return None
