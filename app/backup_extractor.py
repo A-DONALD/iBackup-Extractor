@@ -1,5 +1,4 @@
 import os
-import biplist
 import plistlib
 import sqlite3
 import shutil
@@ -23,17 +22,6 @@ class BackupExtractor:
         status = os.path.join(self.backup_path, "Status.plist")
         with open(status, 'rb') as fp:
             self.backup_metadata['Status'] = plistlib.load(fp)
-
-    '''def extract_photos(self,files):
-        if isinstance(files,list):
-            for file in files:
-                self.extract_photos(file)
-        else:
-            if os.path.exists(files[1]):
-                source_file = files[1]
-                os.makedirs(os.path.join(os.path.curdir, "Photos"), exist_ok=True)  # create Photos directory if it doesn't exist
-                dest_file = os.path.join(os.path.curdir, "Photos", files[0].split('/')[-1])
-                shutil.copy2(source_file, dest_file)'''
 
     def extract_photos(self):
         # Temp
@@ -150,7 +138,6 @@ class BackupExtractor:
                        "ci LEFT JOIN Location l ON ci.location_id = l.ROWID")
 
         self.extracted_data['calendar'] = cursor.fetchall()
-        print(self.extracted_data['calendar'] )
 
     # TBT
     def extract_web_history(self):
@@ -182,7 +169,7 @@ class BackupExtractor:
         cursor = conn.cursor()
         cursor.execute("""
             SELECT ZDATA FROM ZICNOTEDATA
-        """)
+            """)
 
         self.extracted_data['notes'] = cursor.fetchall()
 
@@ -204,18 +191,17 @@ class BackupExtractor:
         cursor.execute("""
                         SELECT ZUNIQUE_ID, ZDURATION, ZLOCATION
                         FROM ZCALLRECORD;
-
                         """)
-
         self.extracted_data['call_history'] = cursor.fetchall()
         print(self.extracted_data['call_history'])
 
     def extract_data(self):
         """extracts data from the backup file and returns it as a dictionary"""
-
         if not self.backup_path:
             return None
 
-
         return self.extracted_data
+
+test = BackupExtractor(r"C:\Users\MSI\Downloads\backup samples\6e81410f-6424-4ec2-829e-1471769a741e")
+test.extract_notes()
 
