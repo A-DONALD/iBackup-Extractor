@@ -52,5 +52,7 @@ class BackupManager:
                     break
         elif isinstance(file, int):
             file_id = file
+        else:
+            return None
         return os.path.join(self.__backup_dir, self.__all_backups[backup_id],
                             self.backups_files[backup_id][file_id][0][:2], self.backups_files[backup_id][file_id][0])
