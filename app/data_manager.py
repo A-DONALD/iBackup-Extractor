@@ -100,26 +100,3 @@ class DataManager:
                             exist_ok=True)  # create Photos directory if it doesn't exist
                 dest_file = os.path.join(data_dir, "Photos", photos['filename'])
                 shutil.copy2(source_file, dest_file)
-
-test = DataManager()
-sms_data = [('', '2017-02-22 14:28:40', 1, '+40741757524', "Don't forget to buy food for Tommy. Love you!"),
-            ('', '2017-02-22 15:00:10', 0, '+33741757524', "Wanna play BasketBall today ?"),
-            ('', '2017-02-22 15:28:00', 0, '+40741757524', "Don't worry, I will buy the food. Love you too! ^_^"),
-            ('', '2017-02-22 16:00:01', 1, '+33741757524', "Of course. lets go!")]
-test.export_sms(sms_data, r'C:\Users\donal\Downloads\backup samples')
-calendar_data = [('back to angers', '2022-05-13 09:28:40', '2022-05-13 20:30:00', 'We need to back in our country', None)]
-test.export_calendar(calendar_data, r'C:\Users\donal\Downloads\backup samples')
-cars = [
-{'No': 1, 'Company': 'Ferrari', 'Car Model': '488 GTB'},
-{'No': 2, 'Company': 'Porsche', 'Car Model': '918 Spyder'},
-{'No': 3, 'Company': 'Bugatti', 'Car Model': 'La Voiture Noire'},
-{'No': 4, 'Company': 'Rolls Royce', 'Car Model': 'Phantom'},
-{'No': 5, 'Company': 'BMW', 'Car Model': 'BMW X7'},
-]
-contact_data = [(4, 'Albert Fitzpatrick', None, None, None, None, None, None, None, None, None, '2017-02-22 13:56:05', '2017-09-14 15:02:14', None, None, None, None, None, None),
-                (3, "Doctor's Office", None, None, None, None, None, None, None, None, None, '2017-02-22 13:55:38', '2017-09-14 15:02:14', None, None, None, None, None, None),
-                (5, 'Ginny Weasley', None, None, None, None, None, None, None, None, None, '2017-02-22 13:56:20', '2017-09-14 15:02:14', None, None, None, None, None, None),
-                (2, 'Jane', 'Appleseed', None, None, None, None, None, None, None, None, '2017-02-22 13:09:56', '2017-09-14 15:02:14', None, None, None, None, None, None),
-                (6, 'Principal Howard', None, None, None, None, None, None, None, None, None, '2017-02-22 13:56:46', '2017-09-14 15:02:14', None, None, None, None, None, None)]
-
-test.export_contacts(contact_data, r'C:\Users\donal\Downloads\backup samples')
