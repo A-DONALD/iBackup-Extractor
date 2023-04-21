@@ -50,6 +50,8 @@ class BackupManager:
                 if f"{self.backups_files[backup_id][i][1]}/{self.backups_files[backup_id][i][2]}" == file:
                     file_id = i
                     break
+                elif f"{self.backups_files[backup_id][i][2]}" == file:
+                    file_id = i
         elif isinstance(file, int):
             file_id = file
         else:
