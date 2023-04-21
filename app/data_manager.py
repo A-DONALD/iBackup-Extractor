@@ -11,3 +11,13 @@ class DataManager:
             writer = csv.DictWriter(csvfile, self.__extracted_data.keys(), delimiter=';')
             writer.writeheader()
             writer.writerows(self.__extracted_data)
+    def export_call_history(self):
+        with open(os.path.join(self.__data_dir, "call_history.csv"), 'w') as csvfile:
+            writer = csv.DictWriter(csvfile, self.__extracted_data.keys(), delimiter=';')
+            writer.writeheader()
+            writer.writerows(self.__extracted_data)
+    def export_web_history(self):
+        with open(os.path.join(self.__data_dir, "web_history.csv"), 'w') as csvfile:
+            writer = csv.DictWriter(csvfile, self.__extracted_data.keys(), delimiter=';')
+            writer.writeheader()
+            writer.writerows(self.__extracted_data)
