@@ -1,5 +1,8 @@
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+from icalendar import Calendar, Event
+from datetime import datetime
+from pytz import UTC # timezone
 import csv
 import os
 class DataManager:
@@ -50,3 +53,32 @@ class DataManager:
                     c.drawString(50, y, f"received on {datetime}: {message}")
                 y -= 20
             c.save()
+    def export_calendar(self, extracted_data):
+        # create a new calendar
+        cal = Calendar()
+        cal.add('prodid', '-//My calendar product//mxm.dk//')
+        cal.add('version', '2.0')
+        for data in extracted_data:
+            summary, dtstart, dtend, description, title = data
+            event = Event()
+            event.add('summary', f'{summary}')
+            event.add('dtstart', datetime(int(dtstart.split("-")[0]),
+                                            int(dtstart.split("-")[1]),
+                                            int(dtstart.split("-")[2].split(" ")[0]),
+                                            int(dtstart.split(":")[0].split(" ")[1]),
+                                            int(dtstart.split(":")[1]),
+                                            int(dtstart.split(":")[2]), tzinfo=UTC))
+            event.add('dtend', datetime(int(dtend.split("-")[0]),
+                                          int(dtend.split("-")[1]),
+                                          int(dtend.split("-")[2].split(" ")[0]),
+                                          int(dtend.split(":")[0].split(" ")[1]),
+                                          int(dtend.split(":")[1]),
+                                          int(dtend.split(":")[2]), tzinfo=UTC))
+            event.add('description', f'{description}')
+            event.add('title', f'{title}')
+            event.add('priority', 5)
+            cal.add_component(event)
+
+        f = open(os.path.join(self.__data_dir, "calendar.ics"), 'wb')
+        f.write(cal.to_ical())
+        f.close()
