@@ -15,6 +15,7 @@ class BackupManager:
             # search folder by folder in the localisation of backup and verify that we have a file manifest.plist
             self.__all_backups = [folder for folder in os.listdir(self.__backup_dir) if os.path.exists(
                 os.path.join(self.__backup_dir, folder, 'Manifest.plist'))]
+        return None
 
     def list_backups(self):
         if not self.__all_backups:
@@ -51,5 +52,7 @@ class BackupManager:
                     break
         elif isinstance(file, int):
             file_id = file
+        else:
+            return None
         return os.path.join(self.__backup_dir, self.__all_backups[backup_id],
                             self.backups_files[backup_id][file_id][0][:2], self.backups_files[backup_id][file_id][0])
