@@ -22,7 +22,7 @@ class DataManager:
             writer = csv.DictWriter(csvfile, extracted_data.keys(), delimiter=';')
             writer.writeheader()
             writer.writerows(extracted_data)
-    def extract_sms(self, extracted_data):
+    def export_sms(self, extracted_data):
         # group the message by phone number
         grouped_data = {}
         for data in extracted_data:
