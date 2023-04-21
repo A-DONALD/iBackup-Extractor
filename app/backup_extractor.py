@@ -47,11 +47,18 @@ class BackupExtractor:
 
         # Get a cursor object
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM ZCLOUDMASTER JOIN ZCLOUDRESOURCE "
-                       "ON ZCLOUDMASTER.Z_PK = ZCLOUDRESOURCE.ZCLOUDMASTER ")
+        cursor.execute("""
+        SELECT
+              ZDIRECTORY,
+              DATETIME(ZDATECREATED + STRFTIME('%s', '2001-01-01 00:00:00'), 'unixepoch', 'localtime'), -- Creation Timestamp
+              ZLATITUDE,  -- Latitude
+              ZLONGITUDE, -- Longitude
+              ZFILENAME -- On-Disk filename
+              FROM ZGENERICASSET
+              ORDER BY ZDATECREATED ASC
+                    """)
 
         self.extracted_data['photos'] = cursor.fetchall()
-        print(self.extracted_data['photos'])
 
     # TBD
     def extract_videos(self):
@@ -106,15 +113,20 @@ class BackupExtractor:
 
         # Get a cursor object
         cursor = conn.cursor()
-        cursor.execute("SELECT chat.display_name AS discussion_title,message.is_from_me AS is_sent_message,"
-                       "handle.uncanonicalized_id AS sender_uncanonicalized_id,"
-                       "DATETIME(message.date + "
-                       "STRFTIME('%s', '2001-01-01 00:00:00'), 'unixepoch', 'localtime') AS message_datetime,"
-                       "message.text AS message_content FROM chat_message_join,chat_handle_join "
-                       "INNER JOIN chat ON chat.ROWID = chat_message_join.chat_id "
-                       "INNER JOIN message ON message.ROWID = chat_message_join.message_id "
-                       "INNER JOIN handle ON handle.ROWID = chat_handle_join.handle_id "
-                       "ORDER BY message.date")
+        cursor.execute("""
+                        SELECT
+                        display_name,
+                        DATETIME(date +
+                        STRFTIME('%s', '2001-01-01 00:00:00'), 'unixepoch', 'localtime'),
+                        is_from_me,
+                        handle.id as sender_name,text
+                        FROM chat_message_join,chat
+                        INNER JOIN message
+                          ON message.rowid = chat_message_join.message_id
+                        INNER JOIN handle
+                          ON handle.rowid = message.handle_id
+                        ORDER BY message.date
+                       """)
 
         self.extracted_data['sms'] = cursor.fetchall()
 
@@ -138,11 +150,24 @@ class BackupExtractor:
                        "ci LEFT JOIN Location l ON ci.location_id = l.ROWID")
 
         self.extracted_data['calendar'] = cursor.fetchall()
+        print(self.extracted_data['calendar'] )
 
+    # TBT
     def extract_web_history(self):
-        pass
+        source_file = os.path.join(self.backup_path, "1a", "1a0e7afc19d307da602ccdcece51af33afe92c53")
+        os.makedirs(os.path.join(os.path.curdir, "../tmp"), exist_ok=True)
+        dest_file = os.path.join(os.path.curdir, "../tmp", "History.db")
+        shutil.copy2(source_file, dest_file)
 
-    #TBD
+        # Connect to the Manifest.db file
+        conn = sqlite3.connect(dest_file)
+        # Get a cursor object
+        cursor = conn.cursor()
+        cursor.execute("SELECT * from history_visits LEFT JOIN history_items ON history_items.ROWID = "
+                       "history_visits.history_item")
+        self.extracted_data['web_history'] = cursor.fetchall()
+
+    # TBD
     def extract_notes(self):
         # Temp
         source_file = os.path.join(self.backup_path, "4f", "4f98687d8ab0d6d1a371110e6b7300f6e465bef2")
@@ -155,14 +180,18 @@ class BackupExtractor:
 
         # Get a cursor object
         cursor = conn.cursor()
-        cursor.execute("")
+        cursor.execute("""
+            SELECT ZDATA FROM ZICNOTEDATA
+        """)
 
         self.extracted_data['notes'] = cursor.fetchall()
 
-    #TBD
+        print(self.extracted_data['notes'])
+
+    # TBD
     def extract_call_history(self):
         # Temp
-        source_file = os.path.join(self.backup_path, "50", "5a4935c78a5255723f707230a451d79c540d2741")
+        source_file = os.path.join(self.backup_path, "5a", "5a4935c78a5255723f707230a451d79c540d2741")
         os.makedirs(os.path.join(os.path.curdir, "../tmp"), exist_ok=True)
         dest_file = os.path.join(os.path.curdir, "../tmp", "CallHistory.storedata")
         shutil.copy2(source_file, dest_file)
@@ -172,17 +201,21 @@ class BackupExtractor:
 
         # Get a cursor object
         cursor = conn.cursor()
-        cursor.execute("")
+        cursor.execute("""
+                        SELECT ZUNIQUE_ID, ZDURATION, ZLOCATION
+                        FROM ZCALLRECORD;
+
+                        """)
 
         self.extracted_data['call_history'] = cursor.fetchall()
+        print(self.extracted_data['call_history'])
+
     def extract_data(self):
         """extracts data from the backup file and returns it as a dictionary"""
 
         if not self.backup_path:
             return None
 
+
         return self.extracted_data
 
-
-test = BackupExtractor(r"C:\Users\MSI\Downloads\backup samples\6e81410f-6424-4ec2-829e-1471769a741e")
-test.extract_photos()
