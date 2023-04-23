@@ -5,27 +5,32 @@ from datetime import datetime
 from pytz import UTC # timezone
 import csv
 import os
+import shutil
 class DataManager:
     """This class is responsible for managing the extracted data, storing it, and retrieving it as necessary."""
-    def __init__(self, data_dir):
-        self.__data_dir = data_dir
-
-    def export_contacts(self, extracted_data):
-        with open(os.path.join(self.__data_dir, "contacts.csv"), 'w') as csvfile:
+    def export_contacts(self, extracted_data, data_dir):
+        with open(os.path.join(data_dir, "contact.csv"), 'w', newline='') as file:
+            writer = csv.writer(file, delimiter=';')
+            writer.writerow(
+                ['ROWID', 'First', 'Last', 'organization', 'department', 'Birthday', 'jobtitle', 'Organization',
+                 'Department', 'Note', 'Nickname', 'Created', 'Modified', 'phone_work', 'phone_mobile', 'phone_home',
+                 'email', 'address', 'city'])
+            for contact in extracted_data:
+                writer.writerow(contact)
+    def export_call_history(self, extracted_data, data_dir):
+        with open(os.path.join(data_dir, "call_history.csv"), 'w') as csvfile:
             writer = csv.DictWriter(csvfile, extracted_data.keys(), delimiter=';')
             writer.writeheader()
             writer.writerows(extracted_data)
-    def export_call_history(self, extracted_data):
-        with open(os.path.join(self.__data_dir, "call_history.csv"), 'w') as csvfile:
+    def export_web_history(self, extracted_data, data_dir):
+        with open(os.path.join(data_dir, "web_history.csv"), 'w') as csvfile:
             writer = csv.DictWriter(csvfile, extracted_data.keys(), delimiter=';')
             writer.writeheader()
             writer.writerows(extracted_data)
-    def export_web_history(self, extracted_data):
-        with open(os.path.join(self.__data_dir, "web_history.csv"), 'w') as csvfile:
-            writer = csv.DictWriter(csvfile, extracted_data.keys(), delimiter=';')
-            writer.writeheader()
-            writer.writerows(extracted_data)
-    def export_sms(self, extracted_data):
+    def export_sms(self, extracted_data, data_dir):
+        # create a new folder messages
+        if not (os.path.exists(os.path.join(data_dir, "messages"))):
+            os.mkdir(os.path.join(data_dir, "messages"))
         # group the message by phone number
         grouped_data = {}
         for data in extracted_data:
@@ -36,14 +41,14 @@ class DataManager:
 
         # for each phone number, we will create a new pdf doc
         for phone_number, messages in grouped_data.items():
-            pdf_filename = os.path.join(self.__data_dir, "messages", f"{phone_number}.pdf")
+            pdf_filename = os.path.join(data_dir, "messages", f"{phone_number}.pdf")
             c = canvas.Canvas(pdf_filename, pagesize=letter)
 
-            # ajouter un en-tête avec le numéro de téléphone
+            # add header with phone number
             c.setFont('Helvetica-Bold', 14)
             c.drawString(50, 750, f"Messages with {phone_number}")
 
-            # ajouter chaque message dans le corps du PDF
+            # add each message in the pdf
             c.setFont('Helvetica', 12)
             y = 700
             for title, datetime, is_for_me, message in messages:
@@ -53,13 +58,14 @@ class DataManager:
                     c.drawString(50, y, f"received on {datetime}: {message}")
                 y -= 20
             c.save()
-    def export_calendar(self, extracted_data):
+    def export_calendar(self, extracted_data, data_dir):
         # create a new calendar
         cal = Calendar()
         cal.add('prodid', '-//My calendar product//mxm.dk//')
         cal.add('version', '2.0')
         for data in extracted_data:
             summary, dtstart, dtend, description, title = data
+            # create new event for each element of extracted_data
             event = Event()
             event.add('summary', f'{summary}')
             event.add('dtstart', datetime(int(dtstart.split("-")[0]),
@@ -79,6 +85,18 @@ class DataManager:
             event.add('priority', 5)
             cal.add_component(event)
 
-        f = open(os.path.join(self.__data_dir, "calendar.ics"), 'wb')
+        f = open(os.path.join(data_dir, "calendar.ics"), 'wb')
         f.write(cal.to_ical())
         f.close()
+    def export_photos(self, photos, data_dir):
+        if isinstance(photos, list):
+            for file in photos:
+                self.export_photos(file, data_dir)
+
+        else:
+            if os.path.exists(photos[1]):
+                source_file = photos[1]
+                os.makedirs(os.path.join(data_dir, "Photos"),
+                            exist_ok=True)  # create Photos directory if it doesn't exist
+                dest_file = os.path.join(data_dir, "Photos", photos['filename'])
+                shutil.copy2(source_file, dest_file)
