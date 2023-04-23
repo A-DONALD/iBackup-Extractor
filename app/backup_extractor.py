@@ -232,7 +232,6 @@ class BackupExtractor:
         self.extract_sms()
         self.extract_calender()
         self.extract_web_history()
-
         return self.extracted_data
 
 
