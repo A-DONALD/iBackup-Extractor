@@ -1,11 +1,16 @@
 import os
+import bplist
 import plistlib
 import sqlite3
 import shutil
 
+from app.backup_manager import BackupManager
+
+
 class BackupExtractor:
     """This class is responsible for extracting the data from the backup files."""
-    def __init__(self,backup_path=None):
+
+    def __init__(self, backup_path=None):
         self.backup_path = backup_path
         self.backup_metadata = {}
         self.extracted_data = {}
@@ -23,7 +28,7 @@ class BackupExtractor:
         with open(status, 'rb') as fp:
             self.backup_metadata['Status'] = plistlib.load(fp)
 
-    def extract_photos(self):
+    def extract_photos(self,backup_manger, backup_id):
         # Temp
         source_file = os.path.join(self.backup_path, "12", "12b144c0bd44f2b3dffd9186d3f9c05b917cee25")
         os.makedirs(os.path.join(os.path.curdir, "../tmp"), exist_ok=True)
@@ -35,25 +40,47 @@ class BackupExtractor:
 
         # Get a cursor object
         cursor = conn.cursor()
-        cursor.execute("""
-        SELECT
-              ZDIRECTORY,
-              DATETIME(ZDATECREATED + STRFTIME('%s', '2001-01-01 00:00:00'), 'unixepoch', 'localtime'), -- Creation Timestamp
-              ZLATITUDE,  -- Latitude
-              ZLONGITUDE, -- Longitude
-              ZFILENAME -- On-Disk filename
-              FROM ZGENERICASSET
-              ORDER BY ZDATECREATED ASC
-                    """)
+        try:
+            cursor.execute("""
+            SELECT
+                  ZDIRECTORY,
+                  ZFILENAME, -- On-Disk filename
+                  DATETIME(ZDATECREATED + STRFTIME('%s', '2001-01-01 00:00:00'), 'unixepoch', 'localtime'), -- Creation Timestamp
+                  ZLATITUDE,  -- Latitude
+                  ZLONGITUDE -- Longitude
+                  FROM ZGENERICASSET
+                  ORDER BY ZDATECREATED ASC
+                        """)
+        except:
+            cursor.execute("""
+                        SELECT
+                              ZDIRECTORY,
+                              ZFILENAME, -- On-Disk filename
+                              DATETIME(ZDATECREATED + STRFTIME('%s', '2001-01-01 00:00:00'), 'unixepoch', 'localtime'), -- Creation Timestamp
+                              ZLATITUDE,  -- Latitude
+                              ZLONGITUDE -- Longitude
+                              FROM ZASSET
+                              ORDER BY ZDATECREATED ASC
+                                    """)
+        result = cursor.fetchall()
+        self.extracted_data['photos'] = []
+        for file in result:
+            file = list(file)
+            file.insert(2, backup_manger.get_file_path(backup_id, "Media/"+file[0]+"/"+file[1]))
+            self.extracted_data['photos'].append(tuple(file))
+        return self.extracted_data['photos']
 
-        self.extracted_data['photos'] = cursor.fetchall()
-
-    # TBD
-    def extract_videos(self):
-        pass
+    def extract_videos(self, backup_manger: BackupManager, backup_id):
+        files = backup_manger.list_backup_files(backup_id)
+        videos = []
+        for file in files:
+            if file.startswith("CameraRollDomain") and file.casefold().endswith("mp4"):
+                videos.append((file.split("/")[-1], backup_manger.get_file_path(backup_id, file)))
+        self.extracted_data['videos'] = videos
+        return self.extracted_data['videos']
 
     def extract_contacts(self):
-        #Temp
+        # Temp
         source_file = os.path.join(self.backup_path, "31", "31bb7ba8914766d4ba40d6dfb6113c8b614be442")
         os.makedirs(os.path.join(os.path.curdir, "../tmp"), exist_ok=True)
         dest_file = os.path.join(os.path.curdir, "../tmp", "AddressBook.sqlitedb")
@@ -168,7 +195,7 @@ class BackupExtractor:
         # Get a cursor object
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT ZDATA FROM ZICNOTEDATA
+            SELECT ZICCLOUDSYNCINGOBJECT.*, ZICNOTEDATA.ZDATA as X_CONTENT_DATA, ZCREATIONDATE AS XFORMATTEDDATESTRING, ZCREATIONDATE1 AS XFORMATTEDDATESTRING1 FROM ZICCLOUDSYNCINGOBJECT LEFT JOIN ZICNOTEDATA ON ZICCLOUDSYNCINGOBJECT.ZNOTE = ZICNOTEDATA.ZNOTE
             """)
 
         self.extracted_data['notes'] = cursor.fetchall()
@@ -195,13 +222,21 @@ class BackupExtractor:
         self.extracted_data['call_history'] = cursor.fetchall()
         print(self.extracted_data['call_history'])
 
-    def extract_data(self):
+    def extract_data(self,backup_manager, backup_id):
         """extracts data from the backup file and returns it as a dictionary"""
         if not self.backup_path:
             return None
-
+        self.extract_photos(backup_manager,backup_id)
+        self.extract_videos(backup_manager,backup_id)
+        self.extract_contacts()
+        self.extract_sms()
+        self.extract_calender()
+        self.extract_web_history()
         return self.extracted_data
 
-test = BackupExtractor(r"C:\Users\MSI\Downloads\backup samples\6e81410f-6424-4ec2-829e-1471769a741e")
-test.extract_notes()
 
+test = BackupManager(r"C:\Users\MSI\Downloads\backup samples")
+print(test.list_backup_files(0))
+test1 = BackupExtractor(r"C:\Users\MSI\Downloads\backup samples\6e81410f-6424-4ec2-829e-1471769a741e")
+
+print(test1.extract_photos(test,0))
