@@ -94,15 +94,26 @@ class DataManager:
         f = open(os.path.join(data_dir, "calendar.ics"), 'wb')
         f.write(cal.to_ical())
         f.close()
-    def export_photos(self, photos, data_dir):
+    def export_photos(self, photos,data_dir):
         if isinstance(photos, list):
             for file in photos:
-                self.export_photos(file, data_dir)
+                self.export_photos(file,data_dir)
 
         else:
-            if os.path.exists(photos[1]):
-                source_file = photos[1]
-                os.makedirs(os.path.join(data_dir, "Photos"),
-                            exist_ok=True)  # create Photos directory if it doesn't exist
-                dest_file = os.path.join(data_dir, "Photos", photos['filename'])
-                shutil.copy2(source_file, dest_file)
+            if os.path.exists(photos[2]):
+                source_file = photos[2]
+                os.makedirs(os.path.join(data_dir, "Photos"), exist_ok=True)  # create Photos directory if it doesn't exist
+                data_dir = os.path.join(data_dir, "Photos", photos[0])
+                shutil.copy2(source_file, data_dir)
+
+    def export_videos(self, videos, data_dir):
+        if isinstance(videos, list):
+            for file in videos:
+                self.export_videos(file, data_dir)
+
+        else:
+            if os.path.exists(videos[1]):
+                source_file = videos[1]
+                os.makedirs(os.path.join(data_dir, "Videos"), exist_ok=True)  # create Photos directory if it doesn't exist
+                data_dir = os.path.join(data_dir, "Videos", videos[0])
+                shutil.copy2(source_file, data_dir)
