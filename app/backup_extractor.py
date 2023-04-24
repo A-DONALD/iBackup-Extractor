@@ -3,7 +3,7 @@ import plistlib
 import sqlite3
 import shutil
 
-from app.backup_manager import BackupManager
+from backup_manager import BackupManager
 
 
 class BackupExtractor:
@@ -26,6 +26,7 @@ class BackupExtractor:
         status = os.path.join(self.backup_path, "Status.plist")
         with open(status, 'rb') as fp:
             self.backup_metadata['Status'] = plistlib.load(fp)
+        return self.backup_metadata
 
     def extract_photos(self,backup_manger, backup_id):
         # Temp
@@ -285,6 +286,3 @@ class BackupExtractor:
         return self.extracted_data
 
 
-test = BackupManager(r"C:\Users\MSI\Downloads\backup samples")
-test1 = BackupExtractor(r"C:\Users\MSI\Downloads\backup samples\6e81410f-6424-4ec2-829e-1471769a741e")
-print(test1.extract_call_history())
