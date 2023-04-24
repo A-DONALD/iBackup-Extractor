@@ -243,7 +243,8 @@ class BackupExtractor:
 
         # Get a cursor object
         cursor = conn.cursor()
-        cursor.execute("SELECT ZORIGINATED,ZANSWERED,ZLOCATION,ZDURATION,ZADDRESS FROM ZCALLRECORD;")
+        cursor.execute("SELECT ZORIGINATED,ZANSWERED,ZLOCATION,DATETIME(ZDATE + "
+                       "STRFTIME('%s', '2001-01-01 00:00:00'), 'unixepoch', 'localtime'),ZDURATION,ZADDRESS FROM ZCALLRECORD ORDER BY ZDATE;")
         result = cursor.fetchall()
         if 'contacts' not in self.extracted_data.keys():
             self.extract_contacts()
@@ -251,14 +252,14 @@ class BackupExtractor:
         self.extracted_data['call_history'] = []
         for row in result:
             row = list(row)
-            seconds = row[3]
+            seconds = row[4]
             # converting time
             seconds = seconds % (24 * 3600)
             hour = seconds // 3600
             seconds %= 3600
             minutes = seconds // 60
             seconds %= 60
-            row[3] = "%d:%02d:%02d" % (hour, minutes, seconds)
+            row[4] = "%d:%02d:%02d" % (hour, minutes, seconds)
 
             for contact in self.extracted_data['contacts']:
                 if contact[0] and row[-1].decode('utf-8') in contact[0].split(" "):
@@ -285,5 +286,5 @@ class BackupExtractor:
 
 
 test = BackupManager(r"C:\Users\MSI\Downloads\backup samples")
-test1 = BackupExtractor(r"C:\Users\MSI\Downloads\backup samples\b91c9a31d2c6e51a41300733b3d9e25a608565ab")
-print(test1.extract_notes())
+test1 = BackupExtractor(r"C:\Users\MSI\Downloads\backup samples\6e81410f-6424-4ec2-829e-1471769a741e")
+print(test1.extract_call_history())
