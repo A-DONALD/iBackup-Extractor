@@ -8,7 +8,7 @@ class BackupManager:
         self.__all_backups = []
         self.search_backups()
         # under array that we use for each backup file to save the information
-        self.backups_files = [[] * len(self.__all_backups)]
+        self.backups_files = [[None]] * len(self.__all_backups)
 
     def search_backups(self):
         if os.path.exists(self.__backup_dir):
