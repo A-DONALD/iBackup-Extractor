@@ -18,10 +18,16 @@ class DataManager:
             for contact in extracted_data:
                 writer.writerow(contact)
     def export_call_history(self, extracted_data, data_dir):
-        with open(os.path.join(data_dir, "call_history.csv"), 'w') as csvfile:
-            writer = csv.DictWriter(csvfile, extracted_data.keys(), delimiter=';')
-            writer.writeheader()
-            writer.writerows(extracted_data)
+        with open(os.path.join(data_dir, "call_history.csv"), 'w', newline='') as file:
+            writer = csv.writer(file, delimiter=';')
+            writer.writerow(
+                ["From", "To", "Name", "Type", "Start date", "Duration", "Location"])
+            for contact in extracted_data:
+                is_for_me, call_successful, name, location, call_time, call_duration, phone_number = contact
+                if is_for_me == 0:
+                    writer.writerow([phone_number, "me", name, "standard", call_time, call_duration, location])
+                elif is_for_me == 1:
+                    writer.writerow(["me", phone_number, name, "standard", call_time, call_duration, location])
     def export_web_history(self, extracted_data, data_dir):
         with open(os.path.join(data_dir, "web_history.csv"), 'w') as csvfile:
             writer = csv.DictWriter(csvfile, extracted_data.keys(), delimiter=';')
