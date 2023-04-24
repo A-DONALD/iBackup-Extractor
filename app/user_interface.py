@@ -76,6 +76,7 @@ class UserInterface:
                     print(f"{i} : {backup}")
                     print("-----" + "-" * l)
 
+
         elif args.command == 'backup info':
             if args.path:
                 self.backup_extractor = BackupExtractor(args.path)
