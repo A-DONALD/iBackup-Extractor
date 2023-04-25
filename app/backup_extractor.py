@@ -30,7 +30,7 @@ class BackupExtractor:
             self.backup_metadata['Status']['Ending date'] = self.backup_metadata['Status'].pop('Date')
         return self.backup_metadata
 
-    def extract_photos(self,backup_manger, backup_id):
+    def extract_photos(self,backup_manger=None, backup_id=None, include_path=True):
         # Temp
         source_file = os.path.join(self.backup_path, "12", "12b144c0bd44f2b3dffd9186d3f9c05b917cee25")
         if not os.path.exists(source_file):
@@ -68,18 +68,43 @@ class BackupExtractor:
                                     """)
         result = cursor.fetchall()
         self.extracted_data['photos'] = []
-        for file in result:
-            file = list(file)
-            file.insert(2, backup_manger.get_file_path(backup_id, "Media/"+file[0]+"/"+file[1]))
-            self.extracted_data['photos'].append(tuple(file))
+
+
+        self.extracted_data['photos'] = result
+
+        if include_path:
+            backup_manger.list_backup_files(backup_id)
+            for file in result:
+                file = list(file)
+                file.insert(2, backup_manger.get_file_path(backup_id, "Media/"+file[0]+"/"+file[1]))
+                self.extracted_data['photos'].append(tuple(file))
         return self.extracted_data['photos']
 
-    def extract_videos(self, backup_manger: BackupManager, backup_id):
-        files = backup_manger.list_backup_files(backup_id)
+    def extract_videos(self, backup_manger=None, backup_id=None, include_path=True):
+
+        if backup_manger is None or backup_id is None:
+            # Connect to the Manifest.db file
+            conn = sqlite3.connect(os.path.join(self.backup_path, "Manifest.db"))
+
+            # Get a cursor object
+            cursor = conn.cursor()
+
+            # Execute a query to get information about the files in the backup
+            cursor.execute('SELECT * FROM Files')
+
+            # Store all information about files for further usage
+            result = cursor.fetchall()
+            files = [f"{row[1]}/{row[2]}" for row in result]
+
+        else:
+            files = backup_manger.list_backup_files(backup_id)
         videos = []
         for file in files:
             if file.startswith("CameraRollDomain") and file.casefold().endswith("mp4"):
-                videos.append((file.split("/")[-1], backup_manger.get_file_path(backup_id, file)))
+                if backup_manger and include_path:
+                    videos.append((file.split("/")[-1], backup_manger.get_file_path(backup_id, file)))
+                else:
+                    videos.append(file.split("/")[-1])
         self.extracted_data['videos'] = videos
         return self.extracted_data['videos']
 
@@ -99,11 +124,11 @@ class BackupExtractor:
         cursor = conn.cursor()
 
         # Execute a query to get information about the files in the backup
-        cursor.execute("SELECT c16Phone, ABPerson.first,ABPerson.last,c16Phone,"
+        cursor.execute("SELECT ABPerson.first,ABPerson.last   ,"
                        "ABPerson.Organization AS organization,"
                        "ABPerson.Department AS department,DATETIME(ABPerson.Birthday + "
                        "STRFTIME('%s', '2001-01-01 00:00:00'), 'unixepoch', 'localtime') AS Birthday,ABPerson.JobTitle as jobtitle,"
-                       "ABPerson.Organization,ABPerson.Department,ABPerson.Note,ABPerson.Nickname,DATETIME(ABPerson.CreationDate + "
+                       "ABPerson.Note,ABPerson.Nickname,DATETIME(ABPerson.CreationDate + "
                        "STRFTIME('%s', '2001-01-01 00:00:00'), 'unixepoch', 'localtime') AS Created,DATETIME(ABPerson.ModificationDate + "
                        "STRFTIME('%s', '2001-01-01 00:00:00'), 'unixepoch', 'localtime') AS Modified,( SELECT value FROM ABMultiValue "
                        "WHERE property = 3 AND record_id = ABPerson.ROWID AND label = (SELECT ROWID FROM ABMultiValueLabel "
@@ -124,7 +149,9 @@ class BackupExtractor:
                        " ON ABPersonFullTextSearch_content.docid = ABPerson.ROWID"
                        " ORDER BY ABPerson.first")
 
-        self.extracted_data['contacts'] = cursor.fetchall()
+        self.extracted_data['contacts'] = []
+        self.extracted_data['contacts'].append([description[0] for description in cursor.description])
+        self.extracted_data['contacts'].append(cursor.fetchall())
         return self.extracted_data['contacts']
 
     def extract_sms(self):
