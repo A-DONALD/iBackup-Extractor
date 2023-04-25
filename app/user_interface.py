@@ -22,17 +22,17 @@ class UserInterface:
         search_parser.add_argument('-l', action='store_true', help='include full path in listing output')
 
         # Backup info command
-        info_parser = subparsers.add_parser('backup info', help='Get info on a specific backup')
+        info_parser = subparsers.add_parser('info', help='Get info on a specific backup')
         info_parser.add_argument('-p', '--path', type=str, help='Path to the backup')
         info_parser.add_argument('-id', type=int, help='ID of the backup')
 
         # Backup list command
-        list_parser = subparsers.add_parser('backup list', help='List files in a specific backup')
+        list_parser = subparsers.add_parser('list', help='List files in a specific backup')
         list_parser.add_argument('-p', '--path', type=str, help='path to the backup')
         list_parser.add_argument('-id', type=int, help='ID of the backup')
 
         # Backup export command
-        export_parser = subparsers.add_parser('backup export', help='Export file to destination path')
+        export_parser = subparsers.add_parser('export', help='Export file to destination path')
         export_parser.add_argument('-p', '--path', type=str, help='path to the backup')
         export_parser.add_argument('-id', type=int, help='ID of the backup')
         export_parser.add_argument('-f', '--filename', type=str, help='File name')
@@ -40,7 +40,7 @@ class UserInterface:
         export_parser.add_argument('-d', '--dest-path', type=str, help='Destination path of the backup')
 
         # Backup export all command
-        export_all_parser = subparsers.add_parser('backup export all',
+        export_all_parser = subparsers.add_parser('export all',
                                                   help='Export all files of a category to destination path')
         export_all_parser.add_argument('-p', '--path', type=str, help='path to the backup')
         export_all_parser.add_argument('-id', type=int, help='ID of the backup')
@@ -76,22 +76,22 @@ class UserInterface:
                     print(f"{i} : {backup}")
                     print("-----" + "-" * l)
 
-
-        elif args.command == 'backup info':
+        elif args.command == 'info':
             if args.path:
                 self.backup_extractor = BackupExtractor(args.path)
             elif args.id:
                 pass
             metadata = self.backup_extractor.get_metadata()
-            unnecessary = ['Lockdown', 'Applications', 'iTunes Files']
+            unnecessary = ['Lockdown', 'BackupKeyBag', 'Applications', 'iTunes Files',
+                           'iTunes Settings', 'Target Type', 'iBooks Data 2']
             for i in metadata.keys():
                 for j in metadata[i]:
                     if j in unnecessary:
-                        print("yes")
                         continue
                     elif j == 'Installed Applications':
+                        print(j, end=": ")
                         for app in metadata[i][j]:
-                            print(app.split(".")[-1], sep=", ")
+                            print(app.split(".")[-1], end=", ")
                         print()
                     else:
                         print(j, ": ", metadata[i][j])

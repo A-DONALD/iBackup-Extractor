@@ -18,6 +18,7 @@ class BackupExtractor:
         manifest = os.path.join(self.backup_path, "Manifest.plist")
         with open(manifest, 'rb') as fp:
             self.backup_metadata['Manifest'] = plistlib.load(fp)
+            self.backup_metadata['Manifest']['Starting date'] = self.backup_metadata['Manifest'].pop('Date')
 
         info = os.path.join(self.backup_path, "Info.plist")
         with open(info, 'rb') as fp:
@@ -26,6 +27,7 @@ class BackupExtractor:
         status = os.path.join(self.backup_path, "Status.plist")
         with open(status, 'rb') as fp:
             self.backup_metadata['Status'] = plistlib.load(fp)
+            self.backup_metadata['Status']['Ending date'] = self.backup_metadata['Status'].pop('Date')
         return self.backup_metadata
 
     def extract_photos(self,backup_manger, backup_id):
