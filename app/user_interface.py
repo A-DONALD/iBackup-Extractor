@@ -1,5 +1,5 @@
 import argparse
-
+import os
 from backup_manager import BackupManager
 from backup_extractor import BackupExtractor
 from data_manager import DataManager
@@ -30,6 +30,8 @@ class UserInterface:
         list_parser = subparsers.add_parser('list', help='List files in a specific backup')
         list_parser.add_argument('-p', '--path', type=str, help='path to the backup')
         list_parser.add_argument('-id', type=int, help='ID of the backup')
+        list_parser.add_argument('-f', '--format', type=int, help='format of list. Print by set of "f"')
+        list_parser.add_argument('-c', '--category', type=str, help='Category of the wanted file')
 
         # Backup export command
         export_parser = subparsers.add_parser('export', help='Export file to destination path')
@@ -97,13 +99,57 @@ class UserInterface:
                         print(j, ": ", metadata[i][j])
 
         elif args.command == 'list':
+            print("Extracting...")
+            files = []
             if args.path:
                 self.backup_manager = BackupManager(args.path)
             elif args.id:
                 pass
-            files = self.backup_manager.list_backup_files(args.path)
-            for file in files:
-                print(file)
+            if args.category:
+                self.backup_extractor = BackupExtractor(args.path)
+                match args.category:
+                    case "photos":
+                        files = [file[1] for file in self.backup_extractor.extract_photos(include_path=False)]
+                    case "videos":
+                        files = self.backup_extractor.extract_videos(include_path=False)
+                    case "contacts":
+                        files = self.backup_extractor.extract_contacts()
+                        files = [f'Name : {file[1] if file[1] else ""} {file[2] if file[2] else ""}\n ' \
+                                 f'Number : {file[11] if file[11] else (file[10] if file[10] else file[12])}, ' \
+                                 f'Email : {file[13]}\n ' \
+                                 f'Organization : {file[3]}\n Department : {file[4]}\n ' \
+                                 f'Birthday : {file[5]}\n Created : {file[8]}, Last time modified : {file[9]}\n ' \
+                                 f'Address : {file[14]}, City : {file[15]}\n'
+                                 for file in files]
+                    case "sms":
+                        pass
+                    case "calendar":
+                        pass
+                    case "web_history":
+                        pass
+                    case "notes":
+                        pass
+                    case "call_history":
+                        pass
+            else:
+                files = self.backup_manager.list_backup_files(args.path)
+                files = sorted(files, key=lambda s: s.split('.')[0])
+            l = len(files)
+            print(f" There are {l} files " + (f"({args.category}) " if args.category else "") + "in the backup")
+            batch_size = 5
+            if args.format:
+                batch_size = args.format
+            try:
+                for i in range(0, l, batch_size):
+                    for j in range(i, min(i + batch_size, l)):
+                        print(j, files[j])
+                    if i + batch_size < l:
+                        input('---Enter to show more---')
+                    else:
+                        break
+            except KeyboardInterrupt:
+                print('\nExiting the program...')
+                return
 
         '''elif args.command == 'backup export':
             self.backup_manager.init(args.search_path)
