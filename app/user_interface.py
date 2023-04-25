@@ -122,7 +122,20 @@ class UserInterface:
                                  f'Address : {file[14]}, City : {file[15]}\n'
                                  for file in files]
                     case "sms":
-                        pass
+                        files = self.backup_extractor.extract_sms()
+                        sorted(files, key=lambda s: s[0])
+                        output = []
+                        l = len(files)
+                        i = 0
+                        while i < l:
+                            chat_id = files[i][0]
+                            output.append(f"--------Messages for chat " + ("" if files[i][1] else "with ") +
+                                           f"{files[i][1] if files[i][1] else files[i][4]}--------\n")
+                            while i < l and files[i][0] == chat_id:
+                                output[-1] += f" From {'owner' if files[i][3] else files[i][4]} on {files[i][2]}: {files[i][5]}\n"
+                                i += 1
+                            i += 1
+                        files = output
                     case "calendar":
                         pass
                     case "web_history":
@@ -135,7 +148,8 @@ class UserInterface:
                 files = self.backup_manager.list_backup_files(args.path)
                 files = sorted(files, key=lambda s: s.split('.')[0])
             l = len(files)
-            print(f" There are {l} files " + (f"({args.category}) " if args.category else "") + "in the backup")
+            print(f" There are {l} files " + (f"({'chat(s)' if args.category=='sms' else args.category}) "
+                                              if args.category else "") + "in the backup")
             batch_size = 5
             if args.format:
                 batch_size = args.format

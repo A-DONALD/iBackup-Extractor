@@ -170,17 +170,18 @@ class BackupExtractor:
         cursor = conn.cursor()
         cursor.execute("""
                         SELECT
-                        display_name,
-                        DATETIME(date +
-                        STRFTIME('%s', '2001-01-01 00:00:00'), 'unixepoch', 'localtime'),
-                        is_from_me,
-                        handle.id as sender_name,text
-                        FROM chat_message_join,chat
-                        INNER JOIN message
-                          ON message.rowid = chat_message_join.message_id
-                        INNER JOIN handle
-                          ON handle.rowid = message.handle_id
-                        ORDER BY message.date
+                            chat_message_join.chat_id,chat.display_name,
+                            DATETIME(message.date_delivered + 
+                            STRFTIME('%s', '2001-01-01 00:00:00'), 'unixepoch', 'localtime'),
+                            message.is_from_me,
+                            handle.id AS sender_number,
+                            message.text AS content
+                        FROM
+                            message
+                        JOIN chat_message_join ON message.ROWID = chat_message_join.message_id
+                        JOIN chat ON chat_message_join.chat_id = chat.ROWID
+                        JOIN handle ON message.handle_id = handle.ROWID
+                        ORDER BY message.date_delivered;
                        """)
 
         self.extracted_data['sms'] = cursor.fetchall()
@@ -291,9 +292,11 @@ class BackupExtractor:
             seconds %= 60
             row[4] = "%d:%02d:%02d" % (hour, minutes, seconds)
 
+            row.insert(2, "Unknown number")
             for contact in self.extracted_data['contacts']:
                 if contact[0] and row[-1].decode('utf-8') in contact[0].split(" "):
-                    row.insert(2, contact[1] + " " + contact[2])
+                    # row.insert(2, contact[1] + " " + contact[2])
+                    row[2] = contact[1] + " " + contact[2]
             row[-1] = ""+row[-1].decode()
             row = tuple(row)
             self.extracted_data['call_history'].append(row)
