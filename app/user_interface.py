@@ -96,15 +96,16 @@ class UserInterface:
                     else:
                         print(j, ": ", metadata[i][j])
 
-        '''elif args.command == 'backup list':
-            self.backup_manager.init(args.search_path)
-            backup_id = self.backup_manager.select_backup(allow_in_progress=args.allow_in_progress)
-        if backup_id:
-            self.backup_extractor.init(self.backup_manager.get_file_path(backup_id))
-            file_list = self.backup_extractor.extract_file_list(args.pattern)
-            self.backup_extractor.list_files(file_list, args.l)
+        elif args.command == 'list':
+            if args.path:
+                self.backup_manager = BackupManager(args.path)
+            elif args.id:
+                pass
+            files = self.backup_manager.list_backup_files(args.path)
+            for file in files:
+                print(file)
 
-        elif args.command == 'backup export':
+        '''elif args.command == 'backup export':
             self.backup_manager.init(args.search_path)
             backup_id = self.backup_manager.select_backup()
         if backup_id:
