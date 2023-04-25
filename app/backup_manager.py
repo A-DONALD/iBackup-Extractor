@@ -5,29 +5,29 @@ class BackupManager:
     """This class is responsible for managing the backup files and directories."""
     def __init__(self, backup_dir):
         self.__backup_dir = backup_dir
-        self.__all_backups = []
+        self.all_backups = []
         self.search_backups()
         # under array that we use for each backup file to save the information
-        self.backups_files = [[None]] * len(self.__all_backups)
+        self.backups_files = [[None]] * len(self.all_backups)
 
     def search_backups(self):
         if os.path.exists(self.__backup_dir):
             # search folder by folder in the localisation of backup and verify that we have a file manifest.plist
-            self.__all_backups = [folder for folder in os.listdir(self.__backup_dir) if os.path.exists(
+            self.all_backups = [folder for folder in os.listdir(self.__backup_dir) if os.path.exists(
                 os.path.join(self.__backup_dir, folder, 'Manifest.plist'))]
         return None
 
     def list_backups(self):
-        if not self.__all_backups:
+        if not self.all_backups:
             return None
         else:
-            return self.__all_backups
+            return self.all_backups
 
     def list_backup_files(self, backup_id):
         if isinstance(backup_id, int):
-            if not self.__all_backups[backup_id]:
+            if not self.all_backups[backup_id]:
                 return None
-            path = os.path.join(self.__backup_dir, self.__all_backups[backup_id])
+            path = os.path.join(self.__backup_dir, self.all_backups[backup_id])
         elif isinstance(backup_id, str):
             path = backup_id
         # Connect to the Manifest.db file
@@ -63,6 +63,6 @@ class BackupManager:
             file_id = file
         else:
             return None
-        if file_id: return os.path.join(self.__backup_dir, self.__all_backups[backup_id],
+        if file_id: return os.path.join(self.__backup_dir, self.all_backups[backup_id],
                             self.backups_files[backup_id][file_id][0][:2], self.backups_files[backup_id][file_id][0])
         return None
