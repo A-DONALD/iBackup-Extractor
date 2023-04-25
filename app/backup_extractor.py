@@ -171,8 +171,7 @@ class BackupExtractor:
         cursor.execute("""
                         SELECT
                             chat_message_join.chat_id,chat.display_name,
-                            DATETIME(message.date + 
-                            STRFTIME('%s', '2001-01-01 00:00:00'), 'unixepoch', 'localtime'),
+                            datetime(message.date/ 1000000000 + 978307200, 'unixepoch') AS date,
                             message.is_from_me,
                             handle.id AS sender_number,
                             message.text AS content
@@ -181,9 +180,8 @@ class BackupExtractor:
                         JOIN chat_message_join ON message.ROWID = chat_message_join.message_id
                         JOIN chat ON chat_message_join.chat_id = chat.ROWID
                         JOIN handle ON message.handle_id = handle.ROWID
-                        ORDER BY message.date_delivered;
+                        ORDER BY message.date;
                        """)
-
         self.extracted_data['sms'] = cursor.fetchall()
         return self.extracted_data['sms']
 

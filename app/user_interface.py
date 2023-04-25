@@ -123,7 +123,7 @@ class UserInterface:
                                  for file in files]
                     case "sms":
                         files = self.backup_extractor.extract_sms()
-                        sorted(files, key=lambda s: s[0])
+                        files = sorted(files, key=lambda s: s[0])
                         output = []
                         l = len(files)
                         i = 0
