@@ -171,7 +171,7 @@ class BackupExtractor:
         cursor.execute("""
                         SELECT
                             chat_message_join.chat_id,chat.display_name,
-                            DATETIME(message.date_delivered + 
+                            DATETIME(message.date + 
                             STRFTIME('%s', '2001-01-01 00:00:00'), 'unixepoch', 'localtime'),
                             message.is_from_me,
                             handle.id AS sender_number,
