@@ -24,10 +24,14 @@ class BackupManager:
             return self.__all_backups
 
     def list_backup_files(self, backup_id):
-        if not self.__all_backups[backup_id]:
-            return None
+        if isinstance(backup_id, int):
+            if not self.__all_backups[backup_id]:
+                return None
+            path = os.path.join(self.__backup_dir, self.__all_backups[backup_id])
+        elif isinstance(backup_id, str):
+            path = backup_id
         # Connect to the Manifest.db file
-        conn = sqlite3.connect(os.path.join(self.__backup_dir, self.__all_backups[backup_id], "Manifest.db"))
+        conn = sqlite3.connect(os.path.join(path, "Manifest.db"))
 
         # Get a cursor object
         cursor = conn.cursor()
@@ -36,10 +40,13 @@ class BackupManager:
         cursor.execute('SELECT * FROM Files')
 
         # Store all information about files for further usage
-        self.backups_files[backup_id] = cursor.fetchall()
+        result = cursor.fetchall()
 
         # Iterate over the results and get out information about each file
-        files = [f"{row[1]}/{row[2]}" for row in self.backups_files[backup_id]]
+        files = [f"{row[1]}/{row[2]}" for row in result]
+
+        if isinstance(backup_id, int):
+            self.backups_files[backup_id] = result
 
         return files
 
