@@ -137,7 +137,12 @@ class UserInterface:
                             i += 1
                         files = output
                     case "calendar":
-                        pass
+                        files = self.backup_extractor.extract_calendar()
+                        files = [f'Event : {file[0]}\n' \
+                                 f'  Description : {file[3]}\n' \
+                                 f'  Start : {file[1]}, End : {file[2]}\n' \
+                                 f'  Location : {file[4]}\n' \
+                                 for file in files]
                     case "web_history":
                         pass
                     case "notes":
@@ -148,7 +153,7 @@ class UserInterface:
                 files = self.backup_manager.list_backup_files(args.path)
                 files = sorted(files, key=lambda s: s.split('.')[0])
             l = len(files)
-            print(f" There are {l} files " + (f"({'chat(s)' if args.category=='sms' else args.category}) "
+            print(f" There are {l} files " + (f"({'chat(s)' if args.category=='sms' else ('event(s)' if args.category =='calendar' else args.category)}) "
                                               if args.category else "") + "in the backup")
             batch_size = 5
             if args.format:
@@ -165,7 +170,7 @@ class UserInterface:
                 print('\nExiting the program...')
                 return
 
-        '''elif args.command == 'backup export':
+        '''elif args.command == 'export':
             self.backup_manager.init(args.search_path)
             backup_id = self.backup_manager.select_backup()
         if backup_id:

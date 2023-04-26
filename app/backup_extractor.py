@@ -66,45 +66,43 @@ class BackupExtractor:
                               FROM ZASSET
                               ORDER BY ZDATECREATED ASC
                                     """)
-        result = cursor.fetchall()
-        self.extracted_data['photos'] = []
-
-
-        self.extracted_data['photos'] = result
+        photos = cursor.fetchall()
+        self.extracted_data['photos'] = photos
 
         if include_path:
-            backup_manger.list_backup_files(backup_id)
-            for file in result:
-                file = list(file)
-                file.insert(2, backup_manger.get_file_path(backup_id, "Media/"+file[0]+"/"+file[1]))
-                self.extracted_data['photos'].append(tuple(file))
+            conn = sqlite3.connect(os.path.join(self.backup_path, "Manifest.db"))
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM Files')
+            files_list = cursor.fetchall()
+            files = dict()
+            for row in files_list:
+                files[row[2].split("/")[-1]] = row[0]
+            self.extracted_data['photos'] = []
+            for photo in photos:
+                photo = list(photo)
+                if photo[1] in files.keys():
+                    filename = files[photo[1]]
+                    photo.insert(2,os.path.join(self.backup_path,filename[:2],filename))
+                else:
+                    photo.insert(2,"Unknown")
+                self.extracted_data['photos'].append(tuple(photo))
         return self.extracted_data['photos']
 
-    def extract_videos(self, backup_manger=None, backup_id=None, include_path=True):
+    def extract_videos(self, include_path=True):
+        # Connect to the Manifest.db file
+        conn = sqlite3.connect(os.path.join(self.backup_path, "Manifest.db"))
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM Files')
+        files = cursor.fetchall()
 
-        if backup_manger is None or backup_id is None:
-            # Connect to the Manifest.db file
-            conn = sqlite3.connect(os.path.join(self.backup_path, "Manifest.db"))
-
-            # Get a cursor object
-            cursor = conn.cursor()
-
-            # Execute a query to get information about the files in the backup
-            cursor.execute('SELECT * FROM Files')
-
-            # Store all information about files for further usage
-            result = cursor.fetchall()
-            files = [f"{row[1]}/{row[2]}" for row in result]
-
-        else:
-            files = backup_manger.list_backup_files(backup_id)
         videos = []
         for file in files:
-            if file.startswith("CameraRollDomain") and file.casefold().endswith("mp4"):
-                if backup_manger and include_path:
-                    videos.append((file.split("/")[-1], backup_manger.get_file_path(backup_id, file)))
+            filename = f"{file[1]}/{file[2]}"
+            if filename.startswith("CameraRollDomain") and filename.casefold().endswith("mp4"):
+                if include_path:
+                    videos.append((filename.split("/")[-1],os.path.join(self.backup_path,file[0][:2],file[0])))
                 else:
-                    videos.append(file.split("/")[-1])
+                    videos.append(filename.split("/")[-1])
         self.extracted_data['videos'] = videos
         return self.extracted_data['videos']
 
@@ -185,7 +183,7 @@ class BackupExtractor:
         self.extracted_data['sms'] = cursor.fetchall()
         return self.extracted_data['sms']
 
-    def extract_calender(self):
+    def extract_calendar(self):
         source_file = os.path.join(self.backup_path, "20", "2041457d5fe04d39d0ab481178355df6781e6858")
         if not os.path.exists(source_file):
             return None
@@ -309,11 +307,11 @@ class BackupExtractor:
         self.extract_videos(backup_manager,backup_id)
         self.extract_contacts()
         self.extract_sms()
-        self.extract_calender()
+        self.extract_calendar()
         self.extract_web_history()
 
         self.extract_call_history()
         return self.extracted_data
 
-
-
+test = BackupExtractor(r"C:\Users\MSI\Downloads\backup samples\b91c9a31d2c6e51a41300733b3d9e25a608565ab")
+print(test.extract_photos())
