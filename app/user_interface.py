@@ -10,6 +10,22 @@ class UserInterface:
         self.backup_manager = None
         self.backup_extractor = None
         self.data_manager = DataManager()
+        self.commands = """Commands:
+                                    \tsearch - Search for backups in the specified path
+                                             -p --path : Path to the backup
+                                             -l : include full path in listing output
+                                    \tinfo - Get info and metadata from local iOS backups
+                                            -p --path : Path to the backup
+                                    \tlist - List files within an iOS backup
+                                            -p --path : Path to the backup
+                                            -c : Category of the wanted file
+                                            -f --format : format of list. Print by set of "f"        
+                                    \texport - Export data from an iOS backup to a destination folder
+                                            -p --path : Path to the backup
+                                            -d -dest-path : Path to the backup
+                                            -c --category : Category of the files to export
+                                    \t available categories : photos, videos, contacts, sms, calendar, call
+                                    """
 
     def run(self):
         global backup_id
@@ -31,7 +47,7 @@ class UserInterface:
         list_parser.add_argument('-p', '--path', type=str, help='path to the backup')
         list_parser.add_argument('-id', type=int, help='ID of the backup')
         list_parser.add_argument('-f', '--format', type=int, help='format of list. Print by set of "f"')
-        list_parser.add_argument('-c', '--category', type=str, help='Category of the wanted file')
+        list_parser.add_argument('-c', '--category', type=str, help='Category of the file to extract')
 
         # Backup export command
         export_parser = subparsers.add_parser('export', help='Export file to destination path')
@@ -46,6 +62,7 @@ class UserInterface:
         if args.command == 'search':
             if not args.path:
                 print("Please provide the path for the search")
+                print(self.commands)
                 return
             self.backup_manager = BackupManager(args.search_path)
             self.backup_manager.search_backups()
@@ -178,9 +195,11 @@ class UserInterface:
         elif args.command == 'export':
             if not args.path:
                 print("Please provide the path to the backup")
+                print(self.commands)
                 return
             if not args.dest_path:
                 print("Please provide the destination path")
+                print(self.commands)
                 return
             elif not os.path.exists(args.dest_path):
                 print("Please provide an existing path")
@@ -189,67 +208,75 @@ class UserInterface:
                 if args.category == 'photos' or args.category == 'all':
                     print("Extracting photos...")
                     data = self.backup_extractor.extract_photos()
+                    if data is None:
+                        print(f"There is no {args.category} data in this backup")
+                        return
                     print("Done\n Exporting photos...")
                     self.data_manager.export_photos(data, args.dest_path)
                     print(f"Done. Exported to {args.dest_path}")
                 elif args.category == 'videos' or args.category == 'all':
                     print("Extracting videos...")
                     data = self.backup_extractor.extract_videos()
+                    if data is None:
+                        print(f"There is no {args.category} data in this backup")
+                        return
                     print("Done\nExporting videos...")
                     self.data_manager.export_videos(data, args.dest_path)
                     print(f"Done. Exported to {args.dest_path}")
                 elif args.category == 'contacts' or args.category == 'all':
                     print("Extracting contacts...")
                     data = self.backup_extractor.extract_contacts()
+                    if data is None:
+                        print(f"There is no {args.category} data in this backup")
+                        return
+                    print(data)
                     print("Done\n Exporting contacts...")
                     self.data_manager.export_contacts(data, args.dest_path)
                     print(f"Done. Exported to {args.dest_path}")
                 elif args.category == 'sms' or args.category == 'all':
                     print("Extracting sms...")
                     data = self.backup_extractor.extract_sms()
+                    if data is None:
+                        print(f"There is no {args.category} data in this backup")
+                        return
+                    print(data)
                     print("Done\n Exporting sms...")
                     self.data_manager.export_sms(data,args.dest_path)
                     print(f"Done. Exported to {args.dest_path}")
                 elif args.category == 'calendar' or args.category == 'all':
                     print("Extracting calendar events...")
                     data = self.backup_extractor.extract_calendar()
+                    if data is None:
+                        print(f"There is no {args.category} data in this backup")
+                        return
                     print("Done\n Exporting calendar events...")
                     self.data_manager.export_calendar(data, args.dest_path)
                     print(f"Done. Exported to {args.dest_path}")
                 elif args.category == 'web_history' or args.category == 'all':
-                    print("Extracting web history...")
+                    pass
+                    '''print("Extracting web history...")
                     data = self.backup_extractor.extract_web_history()
                     print("Done\n Exporting web history...")
                     self.data_manager.export_web_history(data, args.dest_path)
-                    print(f"Done. Exported to {args.dest_path}")
+                    print(f"Done. Exported to {args.dest_path}")'''
                 elif args.category == 'notes' or args.category == 'all':
-                    pass
-                    #data = self.backup_extractor.extract_notes()
-                    #self.data_manager.export_notes(data,args.dest_path)
+                    '''print("Extracting web history...")
+                    data = self.backup_extractor.extract_notes()
+                    print("Done\n Exporting web history...")
+                    self.data_manager.export_notes(data,args.dest_path)
+                    print(f"Done. Exported to {args.dest_path}")'''
                 elif args.category == 'call' or args.category == 'all':
-                    pass
-                    #data = self.backup_extractor.extract_call_history()
-                    #self.data_manager.export_call(data,args.dest_path)
+                    print("Extracting call history...")
+                    data = self.backup_extractor.extract_call_history()
+                    if data is None:
+                        print(f"There is no {args.category} data in this backup")
+                        return
+                    print("Done\n Exporting call history...")
+                    self.data_manager.export_call_history(data, args.dest_path)
+                    print(f"Done. Exported to {args.dest_path}")
 
-
-        '''else:
-            parser.print_help()
-
-    def help(self):
-        print('Commands:')
-        print('list - List files within an iOS backup')
-        print('get_info - Get info and metadata from local iOS backups')
-        print('export - Export data from an iOS backup to a destination folder')
-
-    def list(self):
-        self.backup_extractor.list_files()
-
-    def get_info(self):
-        self.backup_extractor.get_backup_info()
-
-    def export(self):
-        destination = input('Enter destination folder: ')
-        self.data_manager.export_backup(destination)'''
+        else:
+            print(self.commands)
 
 
 if __name__ == "__main__":

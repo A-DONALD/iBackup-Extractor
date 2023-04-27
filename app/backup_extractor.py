@@ -70,6 +70,8 @@ class BackupExtractor:
         self.extracted_data['photos'] = photos
 
         if include_path:
+            if not os.path.exists(os.path.join(self.backup_path, "Manifest.db")):
+                return None
             conn = sqlite3.connect(os.path.join(self.backup_path, "Manifest.db"))
             cursor = conn.cursor()
             cursor.execute('SELECT * FROM Files')
@@ -89,6 +91,8 @@ class BackupExtractor:
         return self.extracted_data['photos']
 
     def extract_videos(self, include_path=True):
+        if not os.path.exists(os.path.join(self.backup_path, "Manifest.db")):
+            return None
         # Connect to the Manifest.db file
         conn = sqlite3.connect(os.path.join(self.backup_path, "Manifest.db"))
         cursor = conn.cursor()
@@ -169,7 +173,7 @@ class BackupExtractor:
         cursor.execute("""
                         SELECT
                             chat_message_join.chat_id,chat.display_name,
-                            datetime(message.date/ 1000000000 + 978307200, 'unixepoch') AS date,
+                            datetime((IFNULL(message.date,message.date_delivered)/ 1000000000) + 978307200, 'unixepoch') AS date,
                             message.is_from_me,
                             handle.id AS sender_number,
                             message.text AS content
@@ -178,7 +182,7 @@ class BackupExtractor:
                         JOIN chat_message_join ON message.ROWID = chat_message_join.message_id
                         JOIN chat ON chat_message_join.chat_id = chat.ROWID
                         JOIN handle ON message.handle_id = handle.ROWID
-                        ORDER BY message.date;
+                        ORDER BY date;
                        """)
         self.extracted_data['sms'] = cursor.fetchall()
         return self.extracted_data['sms']
