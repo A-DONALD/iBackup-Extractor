@@ -14,13 +14,14 @@ class DataManager:
 
     def export_contacts(self, extracted_data, data_dir):
         with open(os.path.join(data_dir, "contact.csv"), 'w', newline='') as file:
-            writer = csv.writer(file, delimiter=';')
-            for contact in extracted_data:
+            writer = csv.writer(file, delimiter=',')
+            writer.writerow(extracted_data[0])
+            for contact in extracted_data[1]:
                 writer.writerow(contact)
 
     def export_call_history(self, extracted_data, data_dir):
         with open(os.path.join(data_dir, "call_history.csv"), 'w', newline='') as file:
-            writer = csv.writer(file, delimiter=';')
+            writer = csv.writer(file, delimiter=',')
             writer.writerow(
                 ["From", "To", "Name", "Type", "Start date", "Duration", "Location"])
             for contact in extracted_data:
@@ -32,7 +33,7 @@ class DataManager:
 
     def export_web_history(self, extracted_data, data_dir):
         with open(os.path.join(data_dir, "web_history.csv"), 'w') as csvfile:
-            writer = csv.DictWriter(csvfile, extracted_data.keys(), delimiter=';')
+            writer = csv.DictWriter(csvfile, extracted_data.keys(), delimiter=',')
             writer.writeheader()
             writer.writerows(extracted_data)
 
@@ -43,10 +44,10 @@ class DataManager:
         # group the message by phone number
         grouped_data = {}
         for data in extracted_data:
-            title, datetime, is_for_me, phone_number, message = data
+            id, display_name, datetime, is_for_me, phone_number, message = data
             if phone_number not in grouped_data:
                 grouped_data[phone_number] = []
-            grouped_data[phone_number].append((title, datetime, is_for_me, message))
+            grouped_data[phone_number].append((display_name, datetime, is_for_me, message))
 
         # for each phone number, we will create a new pdf doc
         for phone_number, messages in grouped_data.items():
@@ -124,3 +125,24 @@ class DataManager:
                             exist_ok=True)  # create Photos directory if it doesn't exist
                 data_dir = os.path.join(data_dir, "Videos", videos[0])
                 shutil.copy2(source_file, data_dir)
+# create data manager instance
+manager = DataManager()
+destination_file_location = r"C:\Users\donal\Downloads\backup samples"
+contact = [['Firstname', 'Lastname', 'Organization', 'Department', 'Birthday', 'Jobtitle', 'Note', 'Nickname', 'Creation', 'Modified', 'Phone_work', 'Phone_mobile', 'Phone_home', 'Email', 'Address', 'City'],
+         [('Albert Fitzpatrick', None, None, None, None, None, None, None, '2017-02-22 13:56:05', '2017-09-14 15:02:14', None, None, None, None, None, None),
+          ("Doctor's Office", None, None, None, None, None, None, None, '2017-02-22 13:55:38', '2017-09-14 15:02:14', None, None, None, None, None, None),
+          ('Ginny Weasley', None, None, None, None, None, None, None, '2017-02-22 13:56:20', '2017-09-14 15:02:14', None, None, None, None, None, None),
+          ('Jane', 'Appleseed', None, None, None, None, None, None, '2017-02-22 13:09:56', '2017-09-14 15:02:14', None, '0741757524', None, None, None, None),
+          ('Principal Howard', None, None, None, None, None, None, None, '2017-02-22 13:56:46', '2017-09-14 15:02:14', None, None, None, None, None, None)]]
+# test export contact
+manager.export_contacts(contact, destination_file_location)
+sms = [(14, '', '2001-01-01 00:00:00', 1, '+40741757524', "Don't forget to buy food for Tommy. Love you!"),
+       (14, '', '2001-01-01 00:00:00', 0, '+40741757524', 'The vet just called. He can see Tommy tomorrow at 3 pm'),
+       (14, '', '2001-01-01 00:00:00', 0, '+40741757524', "Sorry, I can't talk right now.")]
+# test export sms
+manager.export_sms(sms, destination_file_location)
+history = [(0, 1, 'Jane Appleseed', '<<RecentsNumberLocationNotFound>>', '2017-02-22 13:04:48', '0:02:47', '0741757524'),
+           (1, 0, 'Jane Appleseed', 'Romania', '2017-02-22 15:03:09', '0:00:00', '+40741757524'),
+           (1, 0, 'Jane Appleseed', '<<RecentsNumberLocationNotFound>>', '2017-02-22 15:03:28', '0:00:00', '0741757524')]
+# test export call history
+manager.export_call_history(history, destination_file_location)
