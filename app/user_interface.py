@@ -209,19 +209,19 @@ class UserInterface:
                     data = self.backup_extractor.extract_sms()
                     print("Done\n Exporting sms...")
                     self.data_manager.export_sms(data,args.dest_path)
-                    print("Done")
+                    print(f"Done. Exported to {args.dest_path}")
                 elif args.category == 'calendar' or args.category == 'all':
                     print("Extracting calendar events...")
                     data = self.backup_extractor.extract_calendar()
                     print("Done\n Exporting calendar events...")
                     self.data_manager.export_calendar(data, args.dest_path)
-                    print("Done")
+                    print(f"Done. Exported to {args.dest_path}")
                 elif args.category == 'web_history' or args.category == 'all':
                     print("Extracting web history...")
                     data = self.backup_extractor.extract_web_history()
                     print("Done\n Exporting web history...")
                     self.data_manager.export_web_history(data, args.dest_path)
-                    print("Done")
+                    print(f"Done. Exported to {args.dest_path}")
                 elif args.category == 'notes' or args.category == 'all':
                     pass
                     #data = self.backup_extractor.extract_notes()

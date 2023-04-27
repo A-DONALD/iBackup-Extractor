@@ -109,7 +109,7 @@ class DataManager:
                 source_file = photos[2]
                 os.makedirs(os.path.join(data_dir, "Photos"),
                             exist_ok=True)  # create Photos directory if it doesn't exist
-                data_dir = os.path.join(data_dir, "Photos", photos[1])
+                data_dir = os.path.join(data_dir, "Photos", photos[0])
                 shutil.copy2(source_file, data_dir)
 
     def export_videos(self, videos, data_dir):

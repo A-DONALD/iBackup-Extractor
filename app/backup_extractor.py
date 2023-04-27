@@ -145,7 +145,7 @@ class BackupExtractor:
                        "FROM ABPerson "
                        "INNER JOIN ABPersonFullTextSearch_content"
                        " ON ABPersonFullTextSearch_content.docid = ABPerson.ROWID"
-                       " ORDER BY Firstname")
+                       " ORDER BY Firstname ")
 
         self.extracted_data['contacts'] = []
         self.extracted_data['contacts'].append([description[0] for description in cursor.description])
