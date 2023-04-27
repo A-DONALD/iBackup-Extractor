@@ -66,45 +66,43 @@ class BackupExtractor:
                               FROM ZASSET
                               ORDER BY ZDATECREATED ASC
                                     """)
-        result = cursor.fetchall()
-        self.extracted_data['photos'] = []
-
-
-        self.extracted_data['photos'] = result
+        photos = cursor.fetchall()
+        self.extracted_data['photos'] = photos
 
         if include_path:
-            backup_manger.list_backup_files(backup_id)
-            for file in result:
-                file = list(file)
-                file.insert(2, backup_manger.get_file_path(backup_id, "Media/"+file[0]+"/"+file[1]))
-                self.extracted_data['photos'].append(tuple(file))
+            conn = sqlite3.connect(os.path.join(self.backup_path, "Manifest.db"))
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM Files')
+            files_list = cursor.fetchall()
+            files = dict()
+            for row in files_list:
+                files[row[2].split("/")[-1]] = row[0]
+            self.extracted_data['photos'] = []
+            for photo in photos:
+                photo = list(photo)
+                if photo[1] in files.keys():
+                    filename = files[photo[1]]
+                    photo.insert(2,os.path.join(self.backup_path,filename[:2],filename))
+                else:
+                    photo.insert(2,"Unknown")
+                self.extracted_data['photos'].append(tuple(photo))
         return self.extracted_data['photos']
 
-    def extract_videos(self, backup_manger=None, backup_id=None, include_path=True):
+    def extract_videos(self, include_path=True):
+        # Connect to the Manifest.db file
+        conn = sqlite3.connect(os.path.join(self.backup_path, "Manifest.db"))
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM Files')
+        files = cursor.fetchall()
 
-        if backup_manger is None or backup_id is None:
-            # Connect to the Manifest.db file
-            conn = sqlite3.connect(os.path.join(self.backup_path, "Manifest.db"))
-
-            # Get a cursor object
-            cursor = conn.cursor()
-
-            # Execute a query to get information about the files in the backup
-            cursor.execute('SELECT * FROM Files')
-
-            # Store all information about files for further usage
-            result = cursor.fetchall()
-            files = [f"{row[1]}/{row[2]}" for row in result]
-
-        else:
-            files = backup_manger.list_backup_files(backup_id)
         videos = []
         for file in files:
-            if file.startswith("CameraRollDomain") and file.casefold().endswith("mp4"):
-                if backup_manger and include_path:
-                    videos.append((file.split("/")[-1], backup_manger.get_file_path(backup_id, file)))
+            filename = f"{file[1]}/{file[2]}"
+            if filename.startswith("CameraRollDomain") and filename.casefold().endswith("mp4"):
+                if include_path:
+                    videos.append((filename.split("/")[-1],os.path.join(self.backup_path,file[0][:2],file[0])))
                 else:
-                    videos.append(file.split("/")[-1])
+                    videos.append(filename.split("/")[-1])
         self.extracted_data['videos'] = videos
         return self.extracted_data['videos']
 
@@ -124,30 +122,30 @@ class BackupExtractor:
         cursor = conn.cursor()
 
         # Execute a query to get information about the files in the backup
-        cursor.execute("SELECT ABPerson.first,ABPerson.last   ,"
-                       "ABPerson.Organization AS organization,"
-                       "ABPerson.Department AS department,DATETIME(ABPerson.Birthday + "
-                       "STRFTIME('%s', '2001-01-01 00:00:00'), 'unixepoch', 'localtime') AS Birthday,ABPerson.JobTitle as jobtitle,"
+        cursor.execute("SELECT IFNULL(ABPerson.first,c0First) AS Firstname,IFNULL(ABPerson.last,c1Last) AS Lastname ,"
+                       "ABPerson.Organization AS Organization,"
+                       "ABPerson.Department AS Department,DATETIME(ABPerson.Birthday + "
+                       "STRFTIME('%s', '2001-01-01 00:00:00'), 'unixepoch', 'localtime') AS Birthday,ABPerson.JobTitle as Jobtitle,"
                        "ABPerson.Note,ABPerson.Nickname,DATETIME(ABPerson.CreationDate + "
-                       "STRFTIME('%s', '2001-01-01 00:00:00'), 'unixepoch', 'localtime') AS Created,DATETIME(ABPerson.ModificationDate + "
+                       "STRFTIME('%s', '2001-01-01 00:00:00'), 'unixepoch', 'localtime') AS Creation,DATETIME(ABPerson.ModificationDate + "
                        "STRFTIME('%s', '2001-01-01 00:00:00'), 'unixepoch', 'localtime') AS Modified,( SELECT value FROM ABMultiValue "
                        "WHERE property = 3 AND record_id = ABPerson.ROWID AND label = (SELECT ROWID FROM ABMultiValueLabel "
-                       "WHERE value = '_$!<Work>!$_')) AS phone_work,( SELECT value FROM ABMultiValue "
+                       "WHERE value = '_$!<Work>!$_')) AS Phone_work,IFNULL(( SELECT value FROM ABMultiValue "
                        "WHERE property = 3 AND record_id = ABPerson.ROWID AND label = (SELECT ROWID FROM ABMultiValueLabel "
-                       "WHERE value = '_$!<Mobile>!$_')) AS phone_mobile,"
+                       "WHERE value = '_$!<Mobile>!$_')),c16Phone) AS Phone_mobile,"
                        "( SELECT value FROM ABMultiValue WHERE property = 3 AND record_id = ABPerson.ROWID AND label = ("
-                       "SELECT ROWID FROM ABMultiValueLabel WHERE value = '_$!<Home>!$_')) AS phone_home,"
+                       "SELECT ROWID FROM ABMultiValueLabel WHERE value = '_$!<Home>!$_')) AS Phone_home,"
                        "( SELECT value FROM ABMultiValue WHERE property = 4 AND record_id = ABPerson.ROWID AND label IS null)"
-                       " AS email,( SELECT value FROM ABMultiValueEntry WHERE parent_id IN ("
+                       " AS Email,( SELECT value FROM ABMultiValueEntry WHERE parent_id IN ("
                        "SELECT ROWID FROM ABMultiValue WHERE record_id = ABPerson.ROWID) AND key = ("
-                       "SELECT ROWID FROM ABMultiValueEntryKey WHERE lower(value) = 'street')) AS address,"
+                       "SELECT ROWID FROM ABMultiValueEntryKey WHERE lower(value) = 'street')) AS Address,"
                        "( SELECT value FROM ABMultiValueEntry WHERE parent_id IN ("
                        "SELECT ROWID FROM ABMultiValue WHERE record_id = ABPerson.ROWID) AND key = ("
-                       "SELECT ROWID FROM ABMultiValueEntryKey WHERE lower(value) = 'city')) AS city "
+                       "SELECT ROWID FROM ABMultiValueEntryKey WHERE lower(value) = 'city')) AS City "
                        "FROM ABPerson "
                        "INNER JOIN ABPersonFullTextSearch_content"
                        " ON ABPersonFullTextSearch_content.docid = ABPerson.ROWID"
-                       " ORDER BY ABPerson.first")
+                       " ORDER BY Firstname ")
 
         self.extracted_data['contacts'] = []
         self.extracted_data['contacts'].append([description[0] for description in cursor.description])
@@ -170,23 +168,22 @@ class BackupExtractor:
         cursor = conn.cursor()
         cursor.execute("""
                         SELECT
-                        display_name,
-                        DATETIME(date +
-                        STRFTIME('%s', '2001-01-01 00:00:00'), 'unixepoch', 'localtime'),
-                        is_from_me,
-                        handle.id as sender_name,text
-                        FROM chat_message_join,chat
-                        INNER JOIN message
-                          ON message.rowid = chat_message_join.message_id
-                        INNER JOIN handle
-                          ON handle.rowid = message.handle_id
-                        ORDER BY message.date
+                            chat_message_join.chat_id,chat.display_name,
+                            datetime(message.date/ 1000000000 + 978307200, 'unixepoch') AS date,
+                            message.is_from_me,
+                            handle.id AS sender_number,
+                            message.text AS content
+                        FROM
+                            message
+                        JOIN chat_message_join ON message.ROWID = chat_message_join.message_id
+                        JOIN chat ON chat_message_join.chat_id = chat.ROWID
+                        JOIN handle ON message.handle_id = handle.ROWID
+                        ORDER BY message.date;
                        """)
-
         self.extracted_data['sms'] = cursor.fetchall()
         return self.extracted_data['sms']
 
-    def extract_calender(self):
+    def extract_calendar(self):
         source_file = os.path.join(self.backup_path, "20", "2041457d5fe04d39d0ab481178355df6781e6858")
         if not os.path.exists(source_file):
             return None
@@ -291,9 +288,11 @@ class BackupExtractor:
             seconds %= 60
             row[4] = "%d:%02d:%02d" % (hour, minutes, seconds)
 
-            for contact in self.extracted_data['contacts']:
-                if contact[0] and row[-1].decode('utf-8') in contact[0].split(" "):
-                    row.insert(2, contact[1] + " " + contact[2])
+            row.insert(2, "Unknown number")
+            for contact in self.extracted_data['contacts'][1]:
+                if contact[11] and row[-1].decode('utf-8') in contact[11].split(" "):
+                    # row.insert(2, contact[1] + " " + contact[2])
+                    row[2] = contact[0] + " " + contact[1]
             row[-1] = ""+row[-1].decode()
             row = tuple(row)
             self.extracted_data['call_history'].append(row)
@@ -308,11 +307,8 @@ class BackupExtractor:
         self.extract_videos(backup_manager,backup_id)
         self.extract_contacts()
         self.extract_sms()
-        self.extract_calender()
+        self.extract_calendar()
         self.extract_web_history()
 
         self.extract_call_history()
         return self.extracted_data
-
-
-
