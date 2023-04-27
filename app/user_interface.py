@@ -40,25 +40,13 @@ class UserInterface:
         export_parser.add_argument('-f', '--filename', type=str, help='File name')
         export_parser.add_argument('-fid', '--fileId', type=str, help='File Id')
         export_parser.add_argument('-d', '--dest-path', type=str, help='Destination path of the backup')
-
-        # Backup export all command
-        export_all_parser = subparsers.add_parser('export all',
-                                                  help='Export all files of a category to destination path')
-        export_all_parser.add_argument('-p', '--path', type=str, help='path to the backup')
-        export_all_parser.add_argument('-id', type=int, help='ID of the backup')
-        export_all_parser.add_argument('-d', '--dest-path', type=str, help='Destination path of the backup')
-        export_all_parser.add_argument('-photos', action='store_true', help='Export all photos from Camera Roll')
-        export_all_parser.add_argument('-videos', action='store_true', help='Export all videos from Camera Roll')
-        export_all_parser.add_argument('-contacts', action='store_true', help='Export all contacts')
-        export_all_parser.add_argument('-sms', action='store_true', help='Export all sms')
-        export_all_parser.add_argument('-calendar', action='store_true', help='Export all calendar events')
-        export_all_parser.add_argument('-web', '--web-history', action='store_true', help='Export web history')
-        export_all_parser.add_argument('-notes', action='store_true', help='Export all notes')
-        export_all_parser.add_argument('-call', '--call-history', action='store_true', help='Export call history')
-
+        export_parser.add_argument('-c', '--category', type=str, help='Category of the files to export')
         args = parser.parse_args()
 
         if args.command == 'search':
+            if not args.path:
+                print("Please provide the path for the search")
+                return
             self.backup_manager = BackupManager(args.search_path)
             self.backup_manager.search_backups()
             backups = self.backup_manager.list_backups()
@@ -79,7 +67,10 @@ class UserInterface:
                     print("-----" + "-" * l)
 
         elif args.command == 'info':
-            if args.path:
+            if not args.path:
+                print("Please provide the path to the backup")
+                return
+            elif args.path:
                 self.backup_extractor = BackupExtractor(args.path)
             elif args.id:
                 pass
@@ -99,6 +90,9 @@ class UserInterface:
                         print(j, ": ", metadata[i][j])
 
         elif args.command == 'list':
+            if not args.path:
+                print("Please provide the path to the backup")
+                return
             print("Extracting...")
             files = []
             if args.path:
@@ -113,12 +107,13 @@ class UserInterface:
                     case "videos":
                         files = self.backup_extractor.extract_videos(include_path=False)
                     case "contacts":
-                        files = self.backup_extractor.extract_contacts()
-                        files = [f'Name : {file[1] if file[1] else ""} {file[2] if file[2] else ""}\n ' \
-                                 f'Number : {file[11] if file[11] else (file[10] if file[10] else file[12])}, ' \
+                        files = self.backup_extractor.extract_contacts()[1]
+                        print(files)
+                        files = [f'Name : {file[0]} {file[1] if file[1] else ""}\n ' \
+                                 f'Number : {file[11].split(" ")[0] if file[11] else (file[10] if file[10] else file[12])}, ' \
                                  f'Email : {file[13]}\n ' \
-                                 f'Organization : {file[3]}\n Department : {file[4]}\n ' \
-                                 f'Birthday : {file[5]}\n Created : {file[8]}, Last time modified : {file[9]}\n ' \
+                                 f'Organization : {file[2]}\n Department : {file[3]}\n ' \
+                                 f'Birthday : {file[4]}\n Created : {file[8]}, Last time modified : {file[9]}\n ' \
                                  f'Address : {file[14]}, City : {file[15]}\n'
                                  for file in files]
                     case "sms":
@@ -147,12 +142,22 @@ class UserInterface:
                         pass
                     case "notes":
                         pass
-                    case "call_history":
-                        pass
+                    case "call":
+                        files = self.backup_extractor.extract_call_history()
+                        files = [f"From {'owner' if file[0] else file[2]+'(' + file[-1] + ')'} " \
+                                 f"to {'owner' if not file[0] else file[2]+' ('+file[-1]+ ')'}\n  " \
+                                 f"Date : {file[4]}\n  " \
+                                 f"Call answered : {'Yes'if file[1] else 'No'}, Duration : {file[5]}\n  " \
+                                 f"Location : {file[3] if file[3] != '<<RecentsNumberLocationNotFound>>' else 'None'}" for file in files]
             else:
                 files = self.backup_manager.list_backup_files(args.path)
                 files = sorted(files, key=lambda s: s.split('.')[0])
-            l = len(files)
+
+            if files is None:
+                l = 0
+            else:
+                l = len(files)
+
             print(f" There are {l} files " + (f"({'chat(s)' if args.category=='sms' else ('event(s)' if args.category =='calendar' else args.category)}) "
                                               if args.category else "") + "in the backup")
             batch_size = 5
@@ -170,21 +175,64 @@ class UserInterface:
                 print('\nExiting the program...')
                 return
 
-        '''elif args.command == 'export':
-            self.backup_manager.init(args.search_path)
-            backup_id = self.backup_manager.select_backup()
-        if backup_id:
-            self.backup_extractor.init(self.backup_manager.get_file_path(backup_id))
-            self.data_manager.export_photos(args.d)
-            self.data_manager.export_videos(args.d)
-            self.data_manager.export_contacts(args.d)
-            self.data_manager.export_sms(args.d)
-            self.data_manager.export_calendar(args.d)
-            self.data_manager.export_web_history(args.d)
-            self.data_manager.export_notes(args.d)
-            self.data_manager.export_call_history(args.d)
+        elif args.command == 'export':
+            if not args.path:
+                print("Please provide the path to the backup")
+                return
+            if not args.dest_path:
+                print("Please provide the destination path")
+                return
+            elif not os.path.exists(args.dest_path):
+                print("Please provide an existing path")
+            elif args.category or args.category == 'all':
+                self.backup_extractor = BackupExtractor(args.path)
+                if args.category == 'photos' or args.category == 'all':
+                    print("Extracting photos...")
+                    data = self.backup_extractor.extract_photos()
+                    print("Done\n Exporting photos...")
+                    self.data_manager.export_photos(data, args.dest_path)
+                    print(f"Done. Exported to {args.dest_path}")
+                elif args.category == 'videos' or args.category == 'all':
+                    print("Extracting videos...")
+                    data = self.backup_extractor.extract_videos()
+                    print("Done\nExporting videos...")
+                    self.data_manager.export_videos(data, args.dest_path)
+                    print(f"Done. Exported to {args.dest_path}")
+                elif args.category == 'contacts' or args.category == 'all':
+                    print("Extracting contacts...")
+                    data = self.backup_extractor.extract_contacts()
+                    print("Done\n Exporting contacts...")
+                    self.data_manager.export_contacts(data, args.dest_path)
+                    print(f"Done. Exported to {args.dest_path}")
+                elif args.category == 'sms' or args.category == 'all':
+                    print("Extracting sms...")
+                    data = self.backup_extractor.extract_sms()
+                    print("Done\n Exporting sms...")
+                    self.data_manager.export_sms(data,args.dest_path)
+                    print("Done")
+                elif args.category == 'calendar' or args.category == 'all':
+                    print("Extracting calendar events...")
+                    data = self.backup_extractor.extract_calendar()
+                    print("Done\n Exporting calendar events...")
+                    self.data_manager.export_calendar(data, args.dest_path)
+                    print("Done")
+                elif args.category == 'web_history' or args.category == 'all':
+                    print("Extracting web history...")
+                    data = self.backup_extractor.extract_web_history()
+                    print("Done\n Exporting web history...")
+                    self.data_manager.export_web_history(data, args.dest_path)
+                    print("Done")
+                elif args.category == 'notes' or args.category == 'all':
+                    pass
+                    #data = self.backup_extractor.extract_notes()
+                    #self.data_manager.export_notes(data,args.dest_path)
+                elif args.category == 'call' or args.category == 'all':
+                    pass
+                    #data = self.backup_extractor.extract_call_history()
+                    #self.data_manager.export_call(data,args.dest_path)
 
-        else:
+
+        '''else:
             parser.print_help()
 
     def help(self):

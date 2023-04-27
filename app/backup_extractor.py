@@ -122,30 +122,30 @@ class BackupExtractor:
         cursor = conn.cursor()
 
         # Execute a query to get information about the files in the backup
-        cursor.execute("SELECT ABPerson.first,ABPerson.last   ,"
-                       "ABPerson.Organization AS organization,"
-                       "ABPerson.Department AS department,DATETIME(ABPerson.Birthday + "
-                       "STRFTIME('%s', '2001-01-01 00:00:00'), 'unixepoch', 'localtime') AS Birthday,ABPerson.JobTitle as jobtitle,"
+        cursor.execute("SELECT IFNULL(ABPerson.first,c0First) AS Firstname,IFNULL(ABPerson.last,c1Last) AS Lastname ,"
+                       "ABPerson.Organization AS Organization,"
+                       "ABPerson.Department AS Department,DATETIME(ABPerson.Birthday + "
+                       "STRFTIME('%s', '2001-01-01 00:00:00'), 'unixepoch', 'localtime') AS Birthday,ABPerson.JobTitle as Jobtitle,"
                        "ABPerson.Note,ABPerson.Nickname,DATETIME(ABPerson.CreationDate + "
-                       "STRFTIME('%s', '2001-01-01 00:00:00'), 'unixepoch', 'localtime') AS Created,DATETIME(ABPerson.ModificationDate + "
+                       "STRFTIME('%s', '2001-01-01 00:00:00'), 'unixepoch', 'localtime') AS Creation,DATETIME(ABPerson.ModificationDate + "
                        "STRFTIME('%s', '2001-01-01 00:00:00'), 'unixepoch', 'localtime') AS Modified,( SELECT value FROM ABMultiValue "
                        "WHERE property = 3 AND record_id = ABPerson.ROWID AND label = (SELECT ROWID FROM ABMultiValueLabel "
-                       "WHERE value = '_$!<Work>!$_')) AS phone_work,( SELECT value FROM ABMultiValue "
+                       "WHERE value = '_$!<Work>!$_')) AS Phone_work,IFNULL(( SELECT value FROM ABMultiValue "
                        "WHERE property = 3 AND record_id = ABPerson.ROWID AND label = (SELECT ROWID FROM ABMultiValueLabel "
-                       "WHERE value = '_$!<Mobile>!$_')) AS phone_mobile,"
+                       "WHERE value = '_$!<Mobile>!$_')),c16Phone) AS Phone_mobile,"
                        "( SELECT value FROM ABMultiValue WHERE property = 3 AND record_id = ABPerson.ROWID AND label = ("
-                       "SELECT ROWID FROM ABMultiValueLabel WHERE value = '_$!<Home>!$_')) AS phone_home,"
+                       "SELECT ROWID FROM ABMultiValueLabel WHERE value = '_$!<Home>!$_')) AS Phone_home,"
                        "( SELECT value FROM ABMultiValue WHERE property = 4 AND record_id = ABPerson.ROWID AND label IS null)"
-                       " AS email,( SELECT value FROM ABMultiValueEntry WHERE parent_id IN ("
+                       " AS Email,( SELECT value FROM ABMultiValueEntry WHERE parent_id IN ("
                        "SELECT ROWID FROM ABMultiValue WHERE record_id = ABPerson.ROWID) AND key = ("
-                       "SELECT ROWID FROM ABMultiValueEntryKey WHERE lower(value) = 'street')) AS address,"
+                       "SELECT ROWID FROM ABMultiValueEntryKey WHERE lower(value) = 'street')) AS Address,"
                        "( SELECT value FROM ABMultiValueEntry WHERE parent_id IN ("
                        "SELECT ROWID FROM ABMultiValue WHERE record_id = ABPerson.ROWID) AND key = ("
-                       "SELECT ROWID FROM ABMultiValueEntryKey WHERE lower(value) = 'city')) AS city "
+                       "SELECT ROWID FROM ABMultiValueEntryKey WHERE lower(value) = 'city')) AS City "
                        "FROM ABPerson "
                        "INNER JOIN ABPersonFullTextSearch_content"
                        " ON ABPersonFullTextSearch_content.docid = ABPerson.ROWID"
-                       " ORDER BY ABPerson.first")
+                       " ORDER BY Firstname")
 
         self.extracted_data['contacts'] = []
         self.extracted_data['contacts'].append([description[0] for description in cursor.description])
@@ -289,10 +289,10 @@ class BackupExtractor:
             row[4] = "%d:%02d:%02d" % (hour, minutes, seconds)
 
             row.insert(2, "Unknown number")
-            for contact in self.extracted_data['contacts']:
-                if contact[0] and row[-1].decode('utf-8') in contact[0].split(" "):
+            for contact in self.extracted_data['contacts'][1]:
+                if contact[11] and row[-1].decode('utf-8') in contact[11].split(" "):
                     # row.insert(2, contact[1] + " " + contact[2])
-                    row[2] = contact[1] + " " + contact[2]
+                    row[2] = contact[0] + " " + contact[1]
             row[-1] = ""+row[-1].decode()
             row = tuple(row)
             self.extracted_data['call_history'].append(row)
@@ -312,6 +312,3 @@ class BackupExtractor:
 
         self.extract_call_history()
         return self.extracted_data
-
-test = BackupExtractor(r"C:\Users\MSI\Downloads\backup samples\b91c9a31d2c6e51a41300733b3d9e25a608565ab")
-print(test.extract_photos())
