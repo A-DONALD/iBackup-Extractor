@@ -24,7 +24,7 @@ class UserInterface:
                                             -p --path : Path to the backup
                                             -d -dest-path : Path to the backup
                                             -c --category : Category of the files to export
-                                    \t available categories : photos, videos, contacts, sms, calendar, call
+                                    \t available categories : photos, videos, contacts, sms, calendar, call, all
                                     """
 
     def run(self):
@@ -34,7 +34,7 @@ class UserInterface:
 
         # Backup search command
         search_parser = subparsers.add_parser('search', help='Search for backups in the specified path')
-        search_parser.add_argument('-p', '--search-path', type=str, help='Path to search for backups')
+        search_parser.add_argument('-p', '--path', type=str, help='Path to search for backups')
         search_parser.add_argument('-l', action='store_true', help='include full path in listing output')
 
         # Backup info command
@@ -64,11 +64,14 @@ class UserInterface:
                 print("Please provide the path for the search")
                 print(self.commands)
                 return
-            self.backup_manager = BackupManager(args.search_path)
+            elif not os.path.exists(args.path):
+                print("Please provide a valid path for the search")
+                return
+            self.backup_manager = BackupManager(args.path)
             self.backup_manager.search_backups()
             backups = self.backup_manager.list_backups()
 
-            l = max(len(s) for s in backups) + len(args.search_path) if args.l else max(len(s) for s in backups)
+            l = max(len(s) for s in backups) + len(args.path) if args.l else max(len(s) for s in backups)
             print(f"Number of backups found: {len(backups)}")
             print("-----" + "-" * l)
             print("ID |   ", "Full path" if args.l else "FolderName")
@@ -126,46 +129,53 @@ class UserInterface:
                     case "contacts":
                         files = self.backup_extractor.extract_contacts()[1]
                         print(files)
-                        files = [f'Name : {file[0]} {file[1] if file[1] else ""}\n ' \
-                                 f'Number : {file[11].split(" ")[0] if file[11] else (file[10] if file[10] else file[12])}, ' \
-                                 f'Email : {file[13]}\n ' \
-                                 f'Organization : {file[2]}\n Department : {file[3]}\n ' \
-                                 f'Birthday : {file[4]}\n Created : {file[8]}, Last time modified : {file[9]}\n ' \
-                                 f'Address : {file[14]}, City : {file[15]}\n'
-                                 for file in files]
+                        if files:
+                            files = [f'Name : {file[0]} {file[1] if file[1] else ""}\n ' \
+                                     f'Number : {file[11] if file[11] else (file[10] if file[10] else file[12])}, ' \
+                                     f'Email : {file[13]}\n ' \
+                                     f'Organization : {file[2]}\n Department : {file[3]}\n ' \
+                                     f'Birthday : {file[4]}\n Created : {file[8]}, Last time modified : {file[9]}\n ' \
+                                     f'Address : {file[14]}, City : {file[15]}\n'
+                                     for file in files]
                     case "sms":
                         files = self.backup_extractor.extract_sms()
-                        files = sorted(files, key=lambda s: s[0])
-                        output = []
-                        l = len(files)
-                        i = 0
-                        while i < l:
-                            chat_id = files[i][0]
-                            output.append(f"--------Messages for chat " + ("" if files[i][1] else "with ") +
-                                           f"{files[i][1] if files[i][1] else files[i][4]}--------\n")
-                            while i < l and files[i][0] == chat_id:
-                                output[-1] += f" From {'owner' if files[i][3] else files[i][4]} on {files[i][2]}: {files[i][5]}\n"
+                        if files:
+                            files = sorted(files, key=lambda s: s[0])
+                            output = []
+                            l = len(files)
+                            i = 0
+                            while i < l:
+                                chat_id = files[i][0]
+                                output.append(f"--------Messages for chat " + ("" if files[i][1] else "with ") +
+                                               f"{files[i][1] if files[i][1] else files[i][4]}--------\n")
+                                while i < l and files[i][0] == chat_id:
+                                    output[-1] += f" From {'owner' if files[i][3] else files[i][4]} on {files[i][2]}: {files[i][5]}\n"
+                                    i += 1
                                 i += 1
-                            i += 1
-                        files = output
+                            files = output
                     case "calendar":
                         files = self.backup_extractor.extract_calendar()
-                        files = [f'Event : {file[0]}\n' \
-                                 f'  Description : {file[3]}\n' \
-                                 f'  Start : {file[1]}, End : {file[2]}\n' \
-                                 f'  Location : {file[4]}\n' \
-                                 for file in files]
+                        if files:
+                            files = [f'Event : {file[0]}\n' \
+                                     f'  Description : {file[3]}\n' \
+                                     f'  Start : {file[1]}, End : {file[2]}\n' \
+                                     f'  Location : {file[4]}\n' \
+                                     for file in files]
                     case "web_history":
                         pass
                     case "notes":
                         pass
                     case "call":
                         files = self.backup_extractor.extract_call_history()
-                        files = [f"From {'owner' if file[0] else file[2]+'(' + file[-1] + ')'} " \
-                                 f"to {'owner' if not file[0] else file[2]+' ('+file[-1]+ ')'}\n  " \
-                                 f"Date : {file[4]}\n  " \
-                                 f"Call answered : {'Yes'if file[1] else 'No'}, Duration : {file[5]}\n  " \
-                                 f"Location : {file[3] if file[3] != '<<RecentsNumberLocationNotFound>>' else 'None'}" for file in files]
+                        if files:
+                            files = [f"From {'owner' if file[0] else file[2]+'(' + file[-1] + ')'} " \
+                                     f"to {'owner' if not file[0] else file[2]+' ('+file[-1]+ ')'}\n  " \
+                                     f"Date : {file[4]}\n  " \
+                                     f"Call answered : {'Yes'if file[1] else 'No'}, Duration : {file[5]}\n  " \
+                                     f"Location : {file[3] if file[3] != '<<RecentsNumberLocationNotFound>>' else 'None'}" for file in files]
+                    case "all":
+                        files = self.backup_manager.list_backup_files(args.path)
+                        files = sorted(files, key=lambda s: s.split('.')[0])
             else:
                 files = self.backup_manager.list_backup_files(args.path)
                 files = sorted(files, key=lambda s: s.split('.')[0])
