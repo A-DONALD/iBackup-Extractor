@@ -288,7 +288,6 @@ class UserInterface:
                     if data is None:
                         print(f"There is no contacts data in this backup")
                         return
-                    print(data)
                     print("Done\n Exporting contacts...")
                     self.data_manager.export_contacts(data, args.dest_path)
                     print(f"Done. Exported to {args.dest_path}")

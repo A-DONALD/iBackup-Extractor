@@ -1,5 +1,6 @@
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+import textwrap
 from icalendar import Calendar, Event
 from datetime import datetime
 # for time zone UTC
@@ -18,10 +19,11 @@ class DataManager:
             writer.writerow(extracted_data[0])
             for contact in extracted_data[1]:
                 Firstname, Lastname, Organization, Department, Birthday, Jobtitle, Note, Nickname, Creation, Modified, Phone_work, Phone_mobile, Phone_home, Email, Address, City = contact
-                Firstname = Firstname.replace("\u200d","")
-                Firstname = Firstname.replace("\u010d","")
-                Firstname = ''.join(char for char in Firstname if char.isalnum())
-                writer.writerow([Firstname, Lastname, Organization, Department, Birthday, Jobtitle, Note, Nickname, Creation, Modified, Phone_work, Phone_mobile, Phone_home, Email, Address, City])
+                if Firstname:
+                    Firstname = Firstname.replace("\u200d","")
+                    Firstname = Firstname.replace("\u010d","")
+                    Firstname = ''.join(char for char in Firstname if char.isalnum())
+                writer.writerow([Firstname, Lastname, Organization, Department, Birthday, Jobtitle, Note, Nickname, f"'{Creation}", f"'{Modified}", Phone_work, Phone_mobile, Phone_home, Email, Address, City])
 
     def export_call_history(self, extracted_data, data_dir):
         with open(os.path.join(data_dir, "call_history.csv"), 'w', newline='') as file:
@@ -67,14 +69,24 @@ class DataManager:
             c.setFont('Helvetica-Bold', 14)
             c.drawString(50, 750, f"Messages with {phone_number}")
 
+            # Wrap the message text
+            wrap_width = 110  # Adjust this value based on your desired line width
+
             # add each message in the pdf
             c.setFont('Helvetica', 10)
             y = 700
+
             for title, datetime, is_for_me, message in messages:
                 if is_for_me == 1:
-                    c.drawString(50, y, f"sent on {datetime}: {message}")
+                    wrapped_message = textwrap.wrap(f"Sent on {datetime}: {message}", wrap_width)
+                    for line in wrapped_message:
+                        c.drawString(50, y, line)
+                        y -= 20
                 elif is_for_me == 0:
-                    c.drawString(50, y, f"received on {datetime}: {message}")
+                    wrapped_message = textwrap.wrap(f"Received on {datetime}: {message}", wrap_width)
+                    for line in wrapped_message:
+                        c.drawString(50, y, line)
+                        y -= 20
                 y -= 20
             c.save()
 
