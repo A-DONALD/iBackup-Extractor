@@ -24,7 +24,7 @@ class UserInterface:
                                             -p --path : Path to the backup
                                             -d -dest-path : Path to the backup
                                             -c --category : Category of the files to export
-                                    \t available categories : photos, videos, contacts, sms, calendar, notes, call, all
+                                    \t available categories : camera, photos, videos, contacts, sms, calendar,web_history, notes, call, all
                                     """
 
     def run(self):
@@ -71,6 +71,10 @@ class UserInterface:
             self.backup_manager.search_backups()
             backups = self.backup_manager.list_backups()
 
+            if not backups:
+                print(f"There are no backup files in {args.path}")
+                return
+
             l = max(len(s) for s in backups) + len(args.path) if args.l else max(len(s) for s in backups)
             print(f"Number of backups found: {len(backups)}")
             print("-----" + "-" * l)
@@ -95,6 +99,9 @@ class UserInterface:
             elif args.id:
                 pass
             metadata = self.backup_extractor.get_metadata()
+            if not metadata:
+                print(f"There is no backup files in the specified path : {args.path}")
+                return
             unnecessary = ['Lockdown', 'BackupKeyBag', 'Applications', 'iTunes Files',
                            'iTunes Settings', 'Target Type', 'iBooks Data 2']
             for i in metadata.keys():
@@ -109,10 +116,18 @@ class UserInterface:
                     else:
                         print(j, ": ", metadata[i][j])
 
+        if not args.path:
+            print("Please provide the path to the backup")
+            return
+        elif not os.path.exists(args.path):
+            print(f"The path doesn't exist. PLease check it : {args.path}")
+            return
+        manifest = os.path.join(args.path, "Manifest.plist")
+        if not os.path.exists(manifest):
+            print(f"There is no backup files in the path : {args.path}")
+            return
+
         elif args.command == 'list':
-            if not args.path:
-                print("Please provide the path to the backup")
-                return
             print("Extracting...")
             files = []
             if args.path:
@@ -122,8 +137,15 @@ class UserInterface:
             if args.category:
                 self.backup_extractor = BackupExtractor(args.path)
                 match args.category:
-                    case "photos":
+                    case "camera":
                         files = [file[1] for file in self.backup_extractor.extract_photos(include_path=False)]
+                    case "photos":
+                        camera = self.backup_extractor.extract_photos(include_path=False)
+                        files = []
+                        for file in camera:
+                            if file[1].casefold().endswith(".mp4"):
+                                continue
+                            files.append(file[1])
                     case "videos":
                         files = self.backup_extractor.extract_videos(include_path=False)
                     case "contacts":
@@ -182,6 +204,10 @@ class UserInterface:
                     case "all":
                         files = self.backup_manager.list_backup_files(args.path)
                         files = sorted(files, key=lambda s: s.split('.')[0])
+                    case _:
+                        print(f"Sorry we can't recognize the category {args.category}\n Available categories : "
+                              f"camera, photos, videos, contacts, sms, calendar,web_history, notes, call, all")
+                        return
             else:
                 files = self.backup_manager.list_backup_files(args.path)
                 files = sorted(files, key=lambda s: s.split('.')[0])
@@ -200,8 +226,9 @@ class UserInterface:
                 for i in range(0, l, batch_size):
                     for j in range(i, min(i + batch_size, l)):
                         print(j, files[j])
+                        print("------------------------------------")
                     if i + batch_size < l:
-                        input('---Enter to show more---')
+                        input(f'---Enter to show more ({l-(i+batch_size)} left)---')
                     else:
                         break
             except KeyboardInterrupt:
@@ -209,18 +236,33 @@ class UserInterface:
                 return
 
         elif args.command == 'export':
-            if not args.path:
-                print("Please provide the path to the backup")
-                print(self.commands)
-                return
             if not args.dest_path:
                 print("Please provide the destination path")
                 print(self.commands)
                 return
             elif not os.path.exists(args.dest_path):
                 print("Please provide an existing path")
-            elif args.category or args.category == 'all':
+                return
+            elif args.category:
                 self.backup_extractor = BackupExtractor(args.path)
+                if args.category == 'camera' or args.category == 'all':
+                    print("Extracting camera...")
+                    camera = self.backup_extractor.extract_photos()
+                    if camera is None:
+                        print(f"There is no photos data in this backup")
+                        return
+                    photos = []
+                    videos = []
+                    for file in camera:
+                        if file[1].casefold().endswith(".mp4"):
+                            videos.append(file)
+                            continue
+                        photos.append(file)
+                    print("Done\n Exporting camera...")
+                    self.data_manager.export_photos(photos, args.dest_path)
+                    self.data_manager.export_videos(photos, args.dest_path)
+                    print(f"Done. Exported to {args.dest_path}")
+
                 if args.category == 'photos' or args.category == 'all':
                     print("Extracting photos...")
                     data = self.backup_extractor.extract_photos()

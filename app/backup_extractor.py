@@ -2,7 +2,6 @@ import os
 import plistlib
 import sqlite3
 import shutil
-import binascii
 import logging
 import zlib
 
@@ -20,18 +19,23 @@ class BackupExtractor:
 
     def get_metadata(self):
         manifest = os.path.join(self.backup_path, "Manifest.plist")
-        with open(manifest, 'rb') as fp:
-            self.backup_metadata['Manifest'] = plistlib.load(fp)
-            self.backup_metadata['Manifest']['Starting date'] = self.backup_metadata['Manifest'].pop('Date')
+        if os.path.exists(manifest):
+            with open(manifest, 'rb') as fp:
+                self.backup_metadata['Manifest'] = plistlib.load(fp)
+                self.backup_metadata['Manifest']['Starting date'] = self.backup_metadata['Manifest'].pop('Date')
+        else:
+            return None
 
         info = os.path.join(self.backup_path, "Info.plist")
-        with open(info, 'rb') as fp:
-            self.backup_metadata['Info'] = plistlib.load(fp)
+        if os.path.exists(info):
+            with open(info, 'rb') as fp:
+                self.backup_metadata['Info'] = plistlib.load(fp)
 
         status = os.path.join(self.backup_path, "Status.plist")
-        with open(status, 'rb') as fp:
-            self.backup_metadata['Status'] = plistlib.load(fp)
-            self.backup_metadata['Status']['Ending date'] = self.backup_metadata['Status'].pop('Date')
+        if os.path.exists(status):
+            with open(status, 'rb') as fp:
+                self.backup_metadata['Status'] = plistlib.load(fp)
+                self.backup_metadata['Status']['Ending date'] = self.backup_metadata['Status'].pop('Date')
         return self.backup_metadata
 
     def extract_photos(self, backup_manger=None, backup_id=None, include_path=True):
@@ -108,10 +112,11 @@ class BackupExtractor:
             filename = f"{file[1]}/{file[2]}"
             if filename.startswith("CameraRollDomain") and filename.casefold().endswith("mp4"):
                 if include_path:
-                    videos.append((filename.split("/")[-1], os.path.join(self.backup_path, file[0][:2], file[0])))
+                    videos.append((filename.split("/")[0],filename.split("/")[-1], os.path.join(self.backup_path, file[0][:2], file[0])))
                 else:
                     videos.append(filename.split("/")[-1])
         self.extracted_data['videos'] = videos
+        print(self.extracted_data['videos'])
         return self.extracted_data['videos']
 
     def extract_contacts(self):
@@ -393,3 +398,6 @@ class BackupExtractor:
         self.extract_notes()
         self.extract_call_history()
         return self.extracted_data
+
+test = BackupExtractor(r"C:\Users\MSI\Downloads\backup samples\6e81410f-6424-4ec2-829e-1471769a741e")
+test.extract_videos()
