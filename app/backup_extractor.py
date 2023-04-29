@@ -116,7 +116,6 @@ class BackupExtractor:
                 else:
                     videos.append(filename.split("/")[-1])
         self.extracted_data['videos'] = videos
-        print(self.extracted_data['videos'])
         return self.extracted_data['videos']
 
     def extract_contacts(self):
@@ -399,5 +398,3 @@ class BackupExtractor:
         self.extract_call_history()
         return self.extracted_data
 
-test = BackupExtractor(r"C:\Users\MSI\Downloads\backup samples\6e81410f-6424-4ec2-829e-1471769a741e")
-test.extract_videos()

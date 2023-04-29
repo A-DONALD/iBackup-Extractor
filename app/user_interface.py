@@ -258,9 +258,10 @@ class UserInterface:
                             videos.append(file)
                             continue
                         photos.append(file)
-                    print("Done\n Exporting camera...")
+                    print("Done\n Exporting photos...")
                     self.data_manager.export_photos(photos, args.dest_path)
-                    self.data_manager.export_videos(photos, args.dest_path)
+                    print("Done\n Exporting videos...")
+                    self.data_manager.export_videos(videos, args.dest_path)
                     print(f"Done. Exported to {args.dest_path}")
 
                 if args.category == 'photos' or args.category == 'all':
@@ -297,7 +298,6 @@ class UserInterface:
                     if data is None:
                         print(f"There is no sms data in this backup")
                         return
-                    print(data)
                     print("Done\n Exporting sms...")
                     self.data_manager.export_sms(data, args.dest_path)
                     print(f"Done. Exported to {args.dest_path}")

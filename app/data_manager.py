@@ -30,10 +30,13 @@ class DataManager:
                 ["From", "To", "Name", "Type", "Start date", "Duration", "Location"])
             for contact in extracted_data:
                 is_for_me, call_successful, name, location, call_time, call_duration, phone_number = contact
+                phone_number = f"'{phone_number}"
                 if is_for_me == 0:
-                    writer.writerow([phone_number, "me", name, "standard", call_time, call_duration, location])
+                    writer.writerow([phone_number, "me", name, "standard", call_time, call_duration,
+                                     location if location != '<<RecentsNumberLocationNotFound>>' else ''])
                 elif is_for_me == 1:
-                    writer.writerow(["me", phone_number, name, "standard", call_time, call_duration, location])
+                    writer.writerow(["me", phone_number, name, "standard", call_time, call_duration,
+                                     location if location != '<<RecentsNumberLocationNotFound>>' else ''])
 
     def export_web_history(self, extracted_data, data_dir):
         with open(os.path.join(data_dir, "web_history.csv"), 'w') as csvfile:
@@ -112,7 +115,6 @@ class DataManager:
                 self.export_photos(file, data_dir)
 
         else:
-            #print(photos)
             if os.path.exists(photos[2]):
                 source_file = photos[2]
                 os.makedirs(os.path.join(data_dir, "Photos"),
