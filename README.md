@@ -1,6 +1,6 @@
 # IbackupExtractor
 
-ScoreDoc is a web application designed to find the most relevants documents in a set of documents based on some keywords.
+
 
 ## Prerequisites
 
@@ -24,7 +24,7 @@ To clone the IbackupExtractor project from GitLab, follow these steps:
 3. Run the following command to clone the repository:
 
    ```
-   git clone https://gitlab.com/Picasso004/ibackup-extractor.git
+   git clone https://gitlab.com/erasmus-team/ibackup-extractor
    ```
 
 4. After the repository has been cloned, navigate to the project folder:
