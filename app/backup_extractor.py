@@ -7,7 +7,7 @@ import logging
 import zlib
 
 __Plugin_Name = "NOTES"
-log = logging.getLogger('MAIN.' + __Plugin_Name) # Do not rename or remove this ! This is the logger object
+log = logging.getLogger('MAIN.' + __Plugin_Name)  # Do not rename or remove this ! This is the logger object
 
 
 class BackupExtractor:
@@ -34,7 +34,7 @@ class BackupExtractor:
             self.backup_metadata['Status']['Ending date'] = self.backup_metadata['Status'].pop('Date')
         return self.backup_metadata
 
-    def extract_photos(self,backup_manger=None, backup_id=None, include_path=True):
+    def extract_photos(self, backup_manger=None, backup_id=None, include_path=True):
         # Temp
         source_file = os.path.join(self.backup_path, "12", "12b144c0bd44f2b3dffd9186d3f9c05b917cee25")
         if not os.path.exists(source_file):
@@ -88,9 +88,9 @@ class BackupExtractor:
                 photo = list(photo)
                 if photo[1] in files.keys():
                     filename = files[photo[1]]
-                    photo.insert(2,os.path.join(self.backup_path,filename[:2],filename))
+                    photo.insert(2, os.path.join(self.backup_path, filename[:2], filename))
                 else:
-                    photo.insert(2,"Unknown")
+                    photo.insert(2, "Unknown")
                 self.extracted_data['photos'].append(tuple(photo))
         return self.extracted_data['photos']
 
@@ -108,7 +108,7 @@ class BackupExtractor:
             filename = f"{file[1]}/{file[2]}"
             if filename.startswith("CameraRollDomain") and filename.casefold().endswith("mp4"):
                 if include_path:
-                    videos.append((filename.split("/")[-1],os.path.join(self.backup_path,file[0][:2],file[0])))
+                    videos.append((filename.split("/")[-1], os.path.join(self.backup_path, file[0][:2], file[0])))
                 else:
                     videos.append(filename.split("/")[-1])
         self.extracted_data['videos'] = videos
@@ -227,12 +227,19 @@ class BackupExtractor:
         conn = sqlite3.connect(dest_file)
         # Get a cursor object
         cursor = conn.cursor()
-        cursor.execute("SELECT * from history_visits LEFT JOIN history_items ON history_items.ROWID = "
-                       "history_visits.history_item")
-        self.extracted_data['web_history'] = cursor.fetchall()
+
+        try:
+            cursor.execute("""SELECT title, visit_time,
+                                from history_visits LEFT JOIN history_items ON history_items.ROWID = 
+                                history_visits.history_item""")
+            self.extracted_data['web_history'] = cursor.fetchall()
+        except:
+            red = '\033[31m'
+            reset = '\033[0m'
+            print(f"{red} There was an error while extracting web history{reset}")
+            return None
         return self.extracted_data['web_history']
 
-    # TBD
     def extract_notes(self):
         # Temp
         source_file = os.path.join(self.backup_path, "4f", "4f98687d8ab0d6d1a371110e6b7300f6e465bef2")
@@ -367,13 +374,13 @@ class BackupExtractor:
                 if contact[11] and row[-1].decode('utf-8') in contact[11].split(" "):
                     # row.insert(2, contact[1] + " " + contact[2])
                     row[2] = contact[0] + " " + contact[1]
-            row[-1] = ""+row[-1].decode()
+            row[-1] = "" + row[-1].decode()
             row = tuple(row)
             self.extracted_data['call_history'].append(row)
 
         return self.extracted_data['call_history']
 
-    def extract_data(self,backup_manager, backup_id):
+    def extract_data(self, backup_manager, backup_id):
         """extracts data from the backup file and returns it as a dictionary"""
         if not self.backup_path:
             return None
@@ -383,9 +390,6 @@ class BackupExtractor:
         self.extract_sms()
         self.extract_calendar()
         self.extract_web_history()
-
+        self.extract_notes()
         self.extract_call_history()
         return self.extracted_data
-
-test = BackupExtractor(r"C:\Users\MSI\Downloads\backup samples\00008020-0011548E34D1002E")
-print(test.extract_notes())
