@@ -2,8 +2,12 @@ import os
 import plistlib
 import sqlite3
 import shutil
+import binascii
+import logging
+import zlib
 
-from backup_manager import BackupManager
+__Plugin_Name = "NOTES"
+log = logging.getLogger('MAIN.' + __Plugin_Name) # Do not rename or remove this ! This is the logger object
 
 
 class BackupExtractor:
@@ -70,6 +74,8 @@ class BackupExtractor:
         self.extracted_data['photos'] = photos
 
         if include_path:
+            if not os.path.exists(os.path.join(self.backup_path, "Manifest.db")):
+                return None
             conn = sqlite3.connect(os.path.join(self.backup_path, "Manifest.db"))
             cursor = conn.cursor()
             cursor.execute('SELECT * FROM Files')
@@ -89,6 +95,8 @@ class BackupExtractor:
         return self.extracted_data['photos']
 
     def extract_videos(self, include_path=True):
+        if not os.path.exists(os.path.join(self.backup_path, "Manifest.db")):
+            return None
         # Connect to the Manifest.db file
         conn = sqlite3.connect(os.path.join(self.backup_path, "Manifest.db"))
         cursor = conn.cursor()
@@ -169,7 +177,7 @@ class BackupExtractor:
         cursor.execute("""
                         SELECT
                             chat_message_join.chat_id,chat.display_name,
-                            datetime(message.date/ 1000000000 + 978307200, 'unixepoch') AS date,
+                            datetime((IFNULL(message.date,message.date_delivered)/ 1000000000) + 978307200, 'unixepoch') AS date,
                             message.is_from_me,
                             handle.id AS sender_number,
                             message.text AS content
@@ -178,7 +186,7 @@ class BackupExtractor:
                         JOIN chat_message_join ON message.ROWID = chat_message_join.message_id
                         JOIN chat ON chat_message_join.chat_id = chat.ROWID
                         JOIN handle ON message.handle_id = handle.ROWID
-                        ORDER BY message.date;
+                        ORDER BY date;
                        """)
         self.extracted_data['sms'] = cursor.fetchall()
         return self.extracted_data['sms']
@@ -234,27 +242,93 @@ class BackupExtractor:
         dest_file = os.path.join(os.path.curdir, "../tmp", "NoteStore.sqlite")
         shutil.copy2(source_file, dest_file)
 
-        # Connect to the Manifest.db file
         conn = sqlite3.connect(dest_file)
-
-        # Get a cursor object
         cursor = conn.cursor()
-        cursor.execute("""
-            SELECT * FROM ZICNOTEDATA;
-            """)
+        cursor.execute("""SELECT
+                              IFNULL(ZICCLOUDSYNCINGOBJECT.ZTITLE,ZICCLOUDSYNCINGOBJECT.ZTITLE1) AS title,
+                              datetime(ZMODIFICATIONDATE1 + 978307200, 'unixepoch') AS creation_date,
+                              ZICNOTEDATA.ZDATA AS note_data
+                            FROM
+                              ZICCLOUDSYNCINGOBJECT
+                            JOIN
+                              ZICNOTEDATA ON ZICCLOUDSYNCINGOBJECT.Z_PK = ZICNOTEDATA.ZNOTE;
+                        """)
+        notes = cursor.fetchall()
 
-        headers = [i[0] for i in cursor.description]
+        def ReadLengthField(blob):
+            '''Returns a tuple (length, skip) where skip is number of bytes read'''
+            length = 0
+            skip = 0
+            try:
+                data_length = int(blob[0])
+                length = data_length & 0x7F
+                while data_length > 0x7F:
+                    skip += 1
+                    data_length = int(blob[skip])
+                    length = ((data_length & 0x7F) << (skip * 7)) + length
+            except (IndexError, ValueError):
+                log.exception('Error trying to read length field in note data blob')
+            skip += 1
+            return length, skip
 
-        self.extracted_data['notes'] = cursor.fetchall()
+        def GetUncompressedData(compressed):
+            if compressed == None:
+                return None
+            data = None
+            try:
+                data = zlib.decompress(compressed, 15 + 32)
+            except zlib.error:
+                log.exception('Zlib Decompression failed!')
+            return data
 
-        for row in self.extracted_data['notes'] :
-            i = 0
-            for header in headers:
-                print(header," : ",row[i])
-                i += 1
-            print("----------------")
+        def ProcessNoteBodyBlob(blob):
+            data = b''
+            if blob == None: return data
+            try:
+                pos = 0
+                if blob[0:3] != b'\x08\x00\x12':  # header
+                    # log.error('Unexpected bytes in header pos 0 - ' + binascii.hexlify(blob[0:3]) + '  Expected 080012')
+                    return ''
+                pos += 3
+                length, skip = ReadLengthField(blob[pos:])
+                pos += skip
 
-        #print(self.extracted_data['notes'])
+                if blob[pos:pos + 3] != b'\x08\x00\x10':  # header 2
+                    log.error('Unexpected bytes in header pos {0}:{0}+3'.format(pos))
+                    return ''
+                pos += 3
+                length, skip = ReadLengthField(blob[pos:])
+                pos += skip
+
+                # Now text data begins
+                if blob[pos] != 0x1A:
+                    log.error('Unexpected byte in text header pos {} - byte is 0x{:X}'.format(pos, blob[pos]))
+                    return ''
+                pos += 1
+                length, skip = ReadLengthField(blob[pos:])
+                pos += skip
+                # Read text tag next
+                if blob[pos] != 0x12:
+                    log.error('Unexpected byte in pos {} - byte is 0x{:X}'.format(pos, blob[pos]))
+                    return ''
+                pos += 1
+                length, skip = ReadLengthField(blob[pos:])
+                pos += skip
+                data = blob[pos: pos + length].decode('utf-8', 'backslashreplace')
+                # Skipping the formatting Tags
+            except (IndexError, ValueError):
+                log.exception('Error processing note data blob')
+            return data
+
+        result = []
+        for note in notes:
+            tmp = [note[0], note[1]]
+            data = GetUncompressedData(note[-1])
+            data = ProcessNoteBodyBlob(data)
+            tmp.append(data)
+            result.append(tuple(tmp))
+
+        return result
 
     def extract_call_history(self):
         # Temp
@@ -303,8 +377,8 @@ class BackupExtractor:
         """extracts data from the backup file and returns it as a dictionary"""
         if not self.backup_path:
             return None
-        self.extract_photos(backup_manager,backup_id)
-        self.extract_videos(backup_manager,backup_id)
+        self.extract_photos(backup_manager)
+        self.extract_videos(backup_manager)
         self.extract_contacts()
         self.extract_sms()
         self.extract_calendar()
@@ -312,3 +386,6 @@ class BackupExtractor:
 
         self.extract_call_history()
         return self.extracted_data
+
+test = BackupExtractor(r"C:\Users\MSI\Downloads\backup samples\00008020-0011548E34D1002E")
+print(test.extract_notes())
