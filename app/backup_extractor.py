@@ -419,7 +419,7 @@ class BackupExtractor:
                             WHERE 
                                 m.ZTEXT IS NOT NULL
                             ORDER BY 
-                                m.ZMESSAGEDATE DESC;
+                                m.ZMESSAGEDATE;
                                """)
         self.extracted_data['whatsapp'] = cursor.fetchall()
         return self.extracted_data['whatsapp']
@@ -436,4 +436,5 @@ class BackupExtractor:
         self.extract_web_history()
         self.extract_notes()
         self.extract_call_history()
+        self.extract_whatsapp_messages()
         return self.extracted_data

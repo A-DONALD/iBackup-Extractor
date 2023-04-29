@@ -181,3 +181,61 @@ class DataManager:
                 y -= 20
             y -= 20
             c.save()
+
+    def export_whatsapp(self,extracted_data, data_dir):
+        # create a new folder whatsapp messages
+        if not (os.path.exists(os.path.join(data_dir, "Whatsapp"))):
+            os.mkdir(os.path.join(data_dir, "Whatsapp"))
+
+        # group the message by phone number
+        grouped_data = {}
+        for data in extracted_data:
+            id, sender, groupName, is_from_me, date, message = data
+            if id not in grouped_data.keys():
+                grouped_data[id] = []
+            grouped_data[id].append((sender, groupName, is_from_me, date, message))
+
+        # for each chat, we will create a new pdf doc
+        for data in grouped_data.values():
+            if data[0][1]:
+                chat_name = f"Group chat {data[0][1]}"
+            else:
+                chat_name = f"{data[0][0]}"
+            chat_name = [char for char in chat_name if char not in string.punctuation]
+            chat_name = ''.join(chat_name)
+            pdf_filename = os.path.join(data_dir, "Whatsapp", chat_name+".pdf")
+            c = canvas.Canvas(pdf_filename, pagesize=letter)
+
+            # add header with phone number
+            c.setFont('Helvetica-Bold', 14)
+            c.drawString(50, 750, f"Messages with {chat_name}")
+
+            # Wrap the message text
+            wrap_width = 110  # Adjust this value based on your desired line width
+
+            # add each message in the pdf
+            c.setFont('Helvetica', 10)
+            y = 700
+            bottom_margin = 50  # Adjust this value based on your desired bottom margin
+            for sender, groupName, is_from_me, date, message in data:
+                if y < bottom_margin:  # Check if the y-coordinate is less than the bottom margin
+                    y = self.create_new_page(c, chat_name)  # Create a new page and reset the y-coordinate
+
+                if is_from_me:
+                        wrapped_message = textwrap.wrap(f"Sent on {date}: {message}", wrap_width)
+                        for line in wrapped_message:
+                            c.drawString(50, y, line)
+                            y -= 20
+                else:
+                    wrapped_message = textwrap.wrap(f"Received from {sender if sender else groupName} on {date}: {message}", wrap_width)
+                    for line in wrapped_message:
+                        c.drawString(50, y, line)
+                        y -= 20
+                y -= 20
+            c.save()
+
+    def create_new_page(self,c, chat_name):
+        c.showPage()
+        c.setFont('Helvetica', 10)
+        c.drawString(50, 750, f"Messages with {chat_name}")
+        return 700
