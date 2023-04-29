@@ -1,6 +1,7 @@
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import textwrap
+import string
 from icalendar import Calendar, Event
 from datetime import datetime
 # for time zone UTC
@@ -48,8 +49,8 @@ class DataManager:
 
     def export_sms(self, extracted_data, data_dir):
         # create a new folder messages
-        if not (os.path.exists(os.path.join(data_dir, "messages"))):
-            os.mkdir(os.path.join(data_dir, "messages"))
+        if not (os.path.exists(os.path.join(data_dir, "Messages"))):
+            os.mkdir(os.path.join(data_dir, "Messages"))
         # group the message by phone number
         grouped_data = {}
         for data in extracted_data:
@@ -62,7 +63,7 @@ class DataManager:
         for phone_number, messages in grouped_data.items():
             if phone_number.find("*") != -1:
                 phone_number = phone_number.split("*")[1]
-            pdf_filename = os.path.join(data_dir, "messages", f"{phone_number}.pdf")
+            pdf_filename = os.path.join(data_dir, "Messages", f"{phone_number}.pdf")
             c = canvas.Canvas(pdf_filename, pagesize=letter)
 
             # add header with phone number
@@ -146,3 +147,37 @@ class DataManager:
                             exist_ok=True)  # create Photos directory if it doesn't exist
                 data_dir = os.path.join(data_dir, "Videos", videos[1])
                 shutil.copy2(source_file, data_dir)
+
+    def export_notes(self,notes,data_dir):
+        # create a new folder messages
+        if not (os.path.exists(os.path.join(data_dir, "Notes"))):
+            os.mkdir(os.path.join(data_dir, "Notes"))
+            # for note, we will create a new pdf doc
+        for i,(title, date, content) in enumerate(notes):
+            title = [char for char in title if char not in string.punctuation]
+            title = ''.join(title)
+            if title:
+                pdf_filename = os.path.join(data_dir, "Notes", f"{title}.pdf")
+            else:
+                pdf_filename = os.path.join(data_dir, "Notes", f"note-{i}.pdf")
+            c = canvas.Canvas(pdf_filename, pagesize=letter)
+
+            # add header
+            c.setFont('Helvetica-Bold', 14)
+            c.drawString(50, 750, title)
+            c.setFont('Helvetica', 9)
+            c.drawString(50, 730, date)
+
+            # Wrap the message text
+            wrap_width = 110  # Adjust this value based on your desired line width
+
+            # add each message in the pdf
+            c.setFont('Helvetica', 10)
+            y = 700
+
+            wrapped_message = textwrap.wrap(content,wrap_width)
+            for line in wrapped_message:
+                c.drawString(50, y, line)
+                y -= 20
+            y -= 20
+            c.save()

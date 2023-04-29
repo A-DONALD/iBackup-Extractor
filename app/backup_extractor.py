@@ -325,7 +325,8 @@ class BackupExtractor:
                 pos += 1
                 length, skip = ReadLengthField(blob[pos:])
                 pos += skip
-                data = blob[pos: pos + length].decode('utf-8', 'backslashreplace')
+                raw_data = blob[pos: pos + length]
+                data = raw_data.decode('utf-8', 'ignore')
                 # Skipping the formatting Tags
             except (IndexError, ValueError):
                 log.exception('Error processing note data blob')
@@ -384,6 +385,45 @@ class BackupExtractor:
 
         return self.extracted_data['call_history']
 
+    def extract_whatsapp_messages(self):
+        # Temp
+        source_file = os.path.join(self.backup_path, "1b", "1b6b187a1b60b9ae8b720c79e2c67f472bab09c0")
+        if not os.path.exists(source_file):
+            source_file = os.path.join(self.backup_path, "27", "275ee4a160b7a7d60825a46b0d3ff0dcdb2fbc9d")
+            if not os.path.exists(source_file):
+                source_file = os.path.join(self.backup_path, "7c", "7c7fba66680ef796b916b067077cc246adacf01d")
+                if not os.path.exists(source_file):
+                    return None
+        os.makedirs(os.path.join(os.path.curdir, "../tmp"), exist_ok=True)
+        dest_file = os.path.join(os.path.curdir, "../tmp", "ChatStorage.sqlite")
+        shutil.copy2(source_file, dest_file)
+
+        # Connect to the Manifest.db file
+        conn = sqlite3.connect(dest_file)
+
+        # Get a cursor object
+        cursor = conn.cursor()
+        cursor.execute("""
+                           SELECT 
+                                cs.ZCONTACTJID AS chat_id, 
+                                cs.ZPARTNERNAME AS sender_name, 
+                                gi.ZSUBJECTOWNERJID AS group_name, 
+                                m.ZISFROMME AS message_status, 
+                                DATETIME(m.ZMESSAGEDATE + 
+                                STRFTIME('%s', '2001-01-01 00:00:00'), 'unixepoch', 'localtime') AS message_date, 
+                                m.ZTEXT AS message_content
+                            FROM 
+                                ZWAMESSAGE m
+                                JOIN ZWACHATSESSION cs ON m.ZCHATSESSION = cs.Z_PK
+                                LEFT JOIN ZWAGROUPINFO gi ON cs.ZGROUPINFO = gi.Z_PK
+                            WHERE 
+                                m.ZTEXT IS NOT NULL
+                            ORDER BY 
+                                m.ZMESSAGEDATE DESC;
+                               """)
+        self.extracted_data['whatsapp'] = cursor.fetchall()
+        return self.extracted_data['whatsapp']
+
     def extract_data(self, backup_manager, backup_id):
         """extracts data from the backup file and returns it as a dictionary"""
         if not self.backup_path:
@@ -397,4 +437,3 @@ class BackupExtractor:
         self.extract_notes()
         self.extract_call_history()
         return self.extracted_data
-

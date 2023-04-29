@@ -204,6 +204,24 @@ class UserInterface:
                     case "all":
                         files = self.backup_manager.list_backup_files(args.path)
                         files = sorted(files, key=lambda s: s.split('.')[0])
+
+                    case "whatsapp":
+                        files = self.backup_extractor.extract_whatsapp_messages()
+                        if files:
+                            files = sorted(files, key=lambda s: s[0])
+                            output = []
+                            l = len(files)
+                            i = 0
+                            while i < l:
+                                chat_id = files[i][0]
+                                output.append(f"--------Messages for " + ("chat with " if files[i][1] else "group chat ") +
+                                              f"{files[i][1] if files[i][1] else files[i][2]}--------\n")
+                                while i < l and files[i][0] == chat_id:
+                                    output[
+                                        -1] += f" From {'owner' if files[i][3] else files[i][4]} on {files[i][4]}: {files[i][5]}\n"
+                                    i += 1
+                                i += 1
+                            files = output
                     case _:
                         print(f"Sorry we can't recognize the category {args.category}\n Available categories : "
                               f"camera, photos, videos, contacts, sms, calendar,web_history, notes, call, all")
@@ -264,7 +282,7 @@ class UserInterface:
                     self.data_manager.export_videos(videos, args.dest_path)
                     print(f"Done. Exported to {args.dest_path}")
 
-                if args.category == 'photos' or args.category == 'all':
+                if args.category == 'photos':
                     print("Extracting photos...")
                     data = self.backup_extractor.extract_photos()
                     if data is None:
@@ -273,7 +291,7 @@ class UserInterface:
                     print("Done\n Exporting photos...")
                     self.data_manager.export_photos(data, args.dest_path)
                     print(f"Done. Exported to {args.dest_path}")
-                elif args.category == 'videos' or args.category == 'all':
+                if args.category == 'videos':
                     print("Extracting videos...")
                     data = self.backup_extractor.extract_videos()
                     if data is None:
@@ -282,7 +300,7 @@ class UserInterface:
                     print("Done\nExporting videos...")
                     self.data_manager.export_videos(data, args.dest_path)
                     print(f"Done. Exported to {args.dest_path}")
-                elif args.category == 'contacts' or args.category == 'all':
+                if args.category == 'contacts' or args.category == 'all':
                     print("Extracting contacts...")
                     data = self.backup_extractor.extract_contacts()
                     if data is None:
@@ -291,7 +309,7 @@ class UserInterface:
                     print("Done\n Exporting contacts...")
                     self.data_manager.export_contacts(data, args.dest_path)
                     print(f"Done. Exported to {args.dest_path}")
-                elif args.category == 'sms' or args.category == 'all':
+                if args.category == 'sms' or args.category == 'all':
                     print("Extracting sms...")
                     data = self.backup_extractor.extract_sms()
                     if data is None:
@@ -300,7 +318,7 @@ class UserInterface:
                     print("Done\n Exporting sms...")
                     self.data_manager.export_sms(data, args.dest_path)
                     print(f"Done. Exported to {args.dest_path}")
-                elif args.category == 'calendar' or args.category == 'all':
+                if args.category == 'calendar' or args.category == 'all':
                     print("Extracting calendar events...")
                     data = self.backup_extractor.extract_calendar()
                     if data is None:
@@ -309,7 +327,7 @@ class UserInterface:
                     print("Done\n Exporting calendar events...")
                     self.data_manager.export_calendar(data, args.dest_path)
                     print(f"Done. Exported to {args.dest_path}")
-                elif args.category == 'web_history' or args.category == 'all':
+                if args.category == 'web_history' or args.category == 'all':
                     print("Extracting web history...")
                     data = self.backup_extractor.extract_web_history()
                     if data is None:
@@ -318,13 +336,16 @@ class UserInterface:
                     print("Done\n Exporting web history...")
                     self.data_manager.export_web_history(data, args.dest_path)
                     print(f"Done. Exported to {args.dest_path}")
-                elif args.category == 'notes' or args.category == 'all':
-                    '''print("Extracting notes...")
+                if args.category == 'notes' or args.category == 'all':
+                    print("Extracting notes...")
                     data = self.backup_extractor.extract_notes()
+                    if data is None:
+                        print(f"There is no web history data in this backup")
+                        return
                     print("Done\n Exporting notes...")
                     self.data_manager.export_notes(data,args.dest_path)
-                    print(f"Done. Exported to {args.dest_path}")'''
-                elif args.category == 'call' or args.category == 'all':
+                    print(f"Done. Exported to {args.dest_path}")
+                if args.category == 'call' or args.category == 'all':
                     print("Extracting call history...")
                     data = self.backup_extractor.extract_call_history()
                     if data is None:
@@ -333,6 +354,9 @@ class UserInterface:
                     print("Done\n Exporting call history...")
                     self.data_manager.export_call_history(data, args.dest_path)
                     print(f"Done. Exported to {args.dest_path}")
+                if args.category not in ["camera", "photos", "videos", "contacts", "sms", "calendar", "web_history", "notes", "call"]:
+                    print(f"Sorry we can't recognize the category {args.category}\n Available categories : "
+                          f"camera, photos, videos, contacts, sms, calendar,web_history, notes, call, all")
 
         else:
             print(self.commands)
