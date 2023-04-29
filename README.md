@@ -1,6 +1,6 @@
 # IbackupExtractor
 
-
+IBackup Extractor is an open-source tool for extracting particular data from iOS backups. The purpose of the tool is to detect basic data and metadata in all available backups, as well as extract selected data. Similar closed proprietary solutions include iPhone Backup Extractor, iMazing, and iPhone Backup Viewer.
 
 ## Prerequisites
 
