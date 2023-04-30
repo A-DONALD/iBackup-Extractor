@@ -1,8 +1,8 @@
 import argparse
 import os
-from backup_manager import BackupManager
-from backup_extractor import BackupExtractor
-from data_manager import DataManager
+from app.backup_manager import BackupManager
+from app.backup_extractor import BackupExtractor
+from app.data_manager import DataManager
 
 
 class UserInterface:
@@ -24,7 +24,7 @@ class UserInterface:
                                             -p --path : Path to the backup
                                             -d -dest-path : Path to the backup
                                             -c --category : Category of the files to export
-                                    \t available categories : camera, photos, videos, contacts, sms, calendar,web_history, notes, call, all
+                                    \t available categories : camera, photos, videos, contacts, sms, whatsapp ,calendar,web_history, notes, call, all
                                     """
 
     def run(self):

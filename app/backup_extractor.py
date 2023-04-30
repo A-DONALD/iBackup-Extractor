@@ -43,8 +43,8 @@ class BackupExtractor:
         source_file = os.path.join(self.backup_path, "12", "12b144c0bd44f2b3dffd9186d3f9c05b917cee25")
         if not os.path.exists(source_file):
             return None
-        os.makedirs(os.path.join(os.path.curdir, "../tmp"), exist_ok=True)
-        dest_file = os.path.join(os.path.curdir, "../tmp", "Photos.sqlite")
+        os.makedirs(os.path.join(os.path.dirname(os.path.abspath(__file__)), "tmp"), exist_ok=True)
+        dest_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tmp", "Photos.sqlite")
         shutil.copy2(source_file, dest_file)
 
         # Connect to the Manifest.db file
@@ -123,8 +123,8 @@ class BackupExtractor:
         source_file = os.path.join(self.backup_path, "31", "31bb7ba8914766d4ba40d6dfb6113c8b614be442")
         if not os.path.exists(source_file):
             return None
-        os.makedirs(os.path.join(os.path.curdir, "../tmp"), exist_ok=True)
-        dest_file = os.path.join(os.path.curdir, "../tmp", "AddressBook.sqlitedb")
+        os.makedirs(os.path.join(os.path.dirname(os.path.abspath(__file__)), "tmp"), exist_ok=True)
+        dest_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tmp", "AddressBook.sqlitedb")
         shutil.copy2(source_file, dest_file)
 
         # Connect to the Manifest.db file
@@ -169,8 +169,8 @@ class BackupExtractor:
         source_file = os.path.join(self.backup_path, "3d", "3d0d7e5fb2ce288813306e4d4636395e047a3d28")
         if not os.path.exists(source_file):
             return None
-        os.makedirs(os.path.join(os.path.curdir, "../tmp"), exist_ok=True)
-        dest_file = os.path.join(os.path.curdir, "../tmp", "sms.db")
+        os.makedirs(os.path.join(os.path.dirname(os.path.abspath(__file__)), "tmp"), exist_ok=True)
+        dest_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tmp", "sms.db")
         shutil.copy2(source_file, dest_file)
 
         # Connect to the Manifest.db file
@@ -199,8 +199,8 @@ class BackupExtractor:
         source_file = os.path.join(self.backup_path, "20", "2041457d5fe04d39d0ab481178355df6781e6858")
         if not os.path.exists(source_file):
             return None
-        os.makedirs(os.path.join(os.path.curdir, "../tmp"), exist_ok=True)
-        dest_file = os.path.join(os.path.curdir, "../tmp", "Calendar.sqlitedb")
+        os.makedirs(os.path.join(os.path.dirname(os.path.abspath(__file__)), "tmp"), exist_ok=True)
+        dest_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tmp", "Calendar.sqlitedb")
         shutil.copy2(source_file, dest_file)
 
         # Connect to the Manifest.db file
@@ -223,8 +223,8 @@ class BackupExtractor:
         source_file = os.path.join(self.backup_path, "1a", "1a0e7afc19d307da602ccdcece51af33afe92c53")
         if not os.path.exists(source_file):
             return None
-        os.makedirs(os.path.join(os.path.curdir, "../tmp"), exist_ok=True)
-        dest_file = os.path.join(os.path.curdir, "../tmp", "History.db")
+        os.makedirs(os.path.join(os.path.dirname(os.path.abspath(__file__)), "tmp"), exist_ok=True)
+        dest_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tmp", "History.db")
         shutil.copy2(source_file, dest_file)
 
         # Connect to the Manifest.db file
@@ -249,8 +249,8 @@ class BackupExtractor:
         source_file = os.path.join(self.backup_path, "4f", "4f98687d8ab0d6d1a371110e6b7300f6e465bef2")
         if not os.path.exists(source_file):
             return None
-        os.makedirs(os.path.join(os.path.curdir, "../tmp"), exist_ok=True)
-        dest_file = os.path.join(os.path.curdir, "../tmp", "NoteStore.sqlite")
+        os.makedirs(os.path.join(os.path.dirname(os.path.abspath(__file__)), "tmp"), exist_ok=True)
+        dest_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tmp", "NoteStore.sqlite")
         shutil.copy2(source_file, dest_file)
 
         conn = sqlite3.connect(dest_file)
@@ -289,7 +289,8 @@ class BackupExtractor:
             try:
                 data = zlib.decompress(compressed, 15 + 32)
             except zlib.error:
-                log.exception('Zlib Decompression failed!')
+                pass
+                #log.exception('Zlib Decompression failed!')
             return data
 
         def ProcessNoteBodyBlob(blob):
@@ -347,8 +348,8 @@ class BackupExtractor:
         source_file = os.path.join(self.backup_path, "5a", "5a4935c78a5255723f707230a451d79c540d2741")
         if not os.path.exists(source_file):
             return None
-        os.makedirs(os.path.join(os.path.curdir, "../tmp"), exist_ok=True)
-        dest_file = os.path.join(os.path.curdir, "../tmp", "CallHistory.storedata")
+        os.makedirs(os.path.join(os.path.dirname(os.path.abspath(__file__)), "tmp"), exist_ok=True)
+        dest_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tmp", "CallHistory.storedata")
         shutil.copy2(source_file, dest_file)
 
         # Connect to the Manifest.db file
@@ -394,8 +395,8 @@ class BackupExtractor:
                 source_file = os.path.join(self.backup_path, "7c", "7c7fba66680ef796b916b067077cc246adacf01d")
                 if not os.path.exists(source_file):
                     return None
-        os.makedirs(os.path.join(os.path.curdir, "../tmp"), exist_ok=True)
-        dest_file = os.path.join(os.path.curdir, "../tmp", "ChatStorage.sqlite")
+        os.makedirs(os.path.join(os.path.dirname(os.path.abspath(__file__)), "tmp"), exist_ok=True)
+        dest_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tmp", "ChatStorage.sqlite")
         shutil.copy2(source_file, dest_file)
 
         # Connect to the Manifest.db file

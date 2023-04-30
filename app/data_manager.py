@@ -15,35 +15,37 @@ class DataManager:
     """This class is responsible for managing the extracted data, storing it, and retrieving it as necessary."""
 
     def export_contacts(self, extracted_data, data_dir):
-        with open(os.path.join(data_dir, "contact.csv"), 'w', newline='') as file:
-            writer = csv.writer(file, delimiter=',')
+        with open(os.path.join(data_dir, "contact.csv"), 'w', newline='',encoding='utf-16') as file:
+            writer = csv.writer(file,delimiter='\t')
             writer.writerow(extracted_data[0])
             for contact in extracted_data[1]:
                 Firstname, Lastname, Organization, Department, Birthday, Jobtitle, Note, Nickname, Creation, Modified, Phone_work, Phone_mobile, Phone_home, Email, Address, City = contact
                 if Firstname:
-                    Firstname = Firstname.replace("\u200d","")
-                    Firstname = Firstname.replace("\u010d","")
-                    Firstname = ''.join(char for char in Firstname if char.isalnum())
-                writer.writerow([Firstname, Lastname, Organization, Department, Birthday, Jobtitle, Note, Nickname, f"'{Creation}", f"'{Modified}", Phone_work, Phone_mobile, Phone_home, Email, Address, City])
+                    Firstname.encode('utf-16')
+                if Lastname:
+                    Lastname.encode('utf-16')
+                writer.writerow([Firstname, Lastname, Organization, Department, f"'{Birthday}" if Birthday else '', Jobtitle, Note, Nickname, f"'{Creation}", f"'{Modified}", f"'{Phone_work}", f"'{Phone_mobile}", f"'{Phone_home}", Email, Address, City])
 
     def export_call_history(self, extracted_data, data_dir):
-        with open(os.path.join(data_dir, "call_history.csv"), 'w', newline='') as file:
-            writer = csv.writer(file, delimiter=',')
+        with open(os.path.join(data_dir, "call_history.csv"), 'w', newline='', encoding='utf-16') as file:
+            writer = csv.writer(file, delimiter='\t')
             writer.writerow(
                 ["From", "To", "Name", "Type", "Start date", "Duration", "Location"])
             for contact in extracted_data:
                 is_for_me, call_successful, name, location, call_time, call_duration, phone_number = contact
                 phone_number = f"'{phone_number}"
                 if is_for_me == 0:
-                    writer.writerow([phone_number, "me", name, "standard", call_time, call_duration,
+                    writer.writerow([phone_number, "me", name, "standard", f"'{call_time}" if call_duration else '',
+                                     call_duration,
                                      location if location != '<<RecentsNumberLocationNotFound>>' else ''])
                 elif is_for_me == 1:
-                    writer.writerow(["me", phone_number, name, "standard", call_time, call_duration,
+                    writer.writerow(["me", phone_number, name, "standard", f"'{call_time}" if call_duration else '',
+                                     call_duration,
                                      location if location != '<<RecentsNumberLocationNotFound>>' else ''])
 
     def export_web_history(self, extracted_data, data_dir):
         with open(os.path.join(data_dir, "web_history.csv"), 'w') as csvfile:
-            writer = csv.DictWriter(csvfile, extracted_data.keys(), delimiter=',')
+            writer = csv.DictWriter(csvfile, extracted_data.keys(), delimiter=',',encoding='utf-8')
             writer.writeheader()
             writer.writerows(extracted_data)
 
@@ -63,7 +65,7 @@ class DataManager:
         for phone_number, messages in grouped_data.items():
             if phone_number.find("*") != -1:
                 phone_number = phone_number.split("*")[1]
-            pdf_filename = os.path.join(data_dir, "Messages", f"{phone_number}.pdf")
+            pdf_filename = os.path.join(data_dir, u"Messages", f"{phone_number}.pdf")
             c = canvas.Canvas(pdf_filename, pagesize=letter)
 
             # add header with phone number
@@ -76,8 +78,11 @@ class DataManager:
             # add each message in the pdf
             c.setFont('Helvetica', 10)
             y = 700
-
+            bottom_margin = 50  # Adjust this value based on your desired bottom margin
             for title, datetime, is_for_me, message in messages:
+                if y < bottom_margin:  # Check if the y-coordinate is less than the bottom margin
+                    y = self.create_new_page(c,phone_number)  # Create a new page and reset the y-coordinate
+
                 if is_for_me == 1:
                     wrapped_message = textwrap.wrap(f"Sent on {datetime}: {message}", wrap_width)
                     for line in wrapped_message:
@@ -153,7 +158,9 @@ class DataManager:
         if not (os.path.exists(os.path.join(data_dir, "Notes"))):
             os.mkdir(os.path.join(data_dir, "Notes"))
             # for note, we will create a new pdf doc
-        for i,(title, date, content) in enumerate(notes):
+        for i, (title, date, content) in enumerate(notes):
+            if content is b'':
+                content = "The content of this note is encrypted"
             title = [char for char in title if char not in string.punctuation]
             title = ''.join(title)
             if title:
