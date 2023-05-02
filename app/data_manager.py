@@ -16,7 +16,8 @@ class DataManager:
 
     def export_contacts(self, extracted_data, data_dir):
         with open(os.path.join(data_dir, "contact.csv"), 'w', newline='',encoding='utf-16') as file:
-            writer = csv.writer(file,delimiter='\t')
+            # I use the semi-colon delimited csv, if you use another version, feel free to change delimiter to ',' or '\t'
+            writer = csv.writer(file,delimiter=';')
             writer.writerow(extracted_data[0])
             for contact in extracted_data[1]:
                 Firstname, Lastname, Organization, Department, Birthday, Jobtitle, Note, Nickname, Creation, Modified, Phone_work, Phone_mobile, Phone_home, Email, Address, City = contact
@@ -28,7 +29,7 @@ class DataManager:
 
     def export_call_history(self, extracted_data, data_dir):
         with open(os.path.join(data_dir, "call_history.csv"), 'w', newline='', encoding='utf-16') as file:
-            writer = csv.writer(file, delimiter='\t')
+            writer = csv.writer(file, delimiter=';')
             writer.writerow(
                 ["From", "To", "Name", "Type", "Start date", "Duration", "Location"])
             for contact in extracted_data:
@@ -45,7 +46,7 @@ class DataManager:
 
     def export_web_history(self, extracted_data, data_dir):
         with open(os.path.join(data_dir, "web_history.csv"), 'w') as csvfile:
-            writer = csv.DictWriter(csvfile, extracted_data.keys(), delimiter=',',encoding='utf-8')
+            writer = csv.DictWriter(csvfile, extracted_data.keys(), delimiter=';',encoding='utf-8')
             writer.writeheader()
             writer.writerows(extracted_data)
 
