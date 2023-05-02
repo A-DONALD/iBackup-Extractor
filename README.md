@@ -47,5 +47,5 @@ To clone the IbackupExtractor project from GitLab, follow these steps:
    python run.py
    ```
 
-2. Follow the instructions in the user manual: https://gitlab.com/erasmus-team/ibackup-extractor/-/wikis/User-Manual
+2. Follow the instructions in the user manual: https://github.com/A-DONALD/iBackup-Extractor/wiki/User-Manual
 
